@@ -258,6 +258,22 @@ export const premiumApi = {
   getWorkerStatus: async (): Promise<ApiResponse<{ isRunning: boolean, lastCheck: string, stats: { total: number, pending: number, completed: number, failed: number } }>> => {
     const response = await fetch(`${API_BASE_URL}/premium/worker/status`);
     return response.json();
+  },
+
+  // Pause batch
+  pauseBatch: async (batchId: string): Promise<ApiResponse<{ success: boolean, message: string }>> => {
+    const response = await fetch(`${API_BASE_URL}/premium/batches/${batchId}/pause`, {
+      method: 'POST'
+    });
+    return response.json();
+  },
+
+  // Resume batch
+  resumeBatch: async (batchId: string): Promise<ApiResponse<{ success: boolean, message: string }>> => {
+    const response = await fetch(`${API_BASE_URL}/premium/batches/${batchId}/resume`, {
+      method: 'POST'
+    });
+    return response.json();
   }
 };
 

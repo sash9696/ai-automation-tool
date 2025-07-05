@@ -50,13 +50,13 @@ const Premium = () => {
 
   const fetchInitialData = async () => {
     try {
-      const [batches, analyticsData] = await Promise.all([
-        premiumApi.getScheduledBatches(),
+      const [batchesResponse, analyticsResponse] = await Promise.all([
+        premiumApi.getBatches(),
         premiumApi.getAnalytics()
       ]);
       
-      setScheduledBatches(batches);
-      setAnalytics(analyticsData);
+      setScheduledBatches(batchesResponse.data?.batches || []);
+      setAnalytics(analyticsResponse.data || null);
     } catch (error) {
       console.error('Failed to fetch premium data:', error);
     } finally {
@@ -67,12 +67,12 @@ const Premium = () => {
   const handleGenerateTrendingPosts = async () => {
     setIsGenerating(true);
     try {
-      const response = await premiumApi.generateTrendingPosts({
+      const response = await premiumApi.generateTrending({
         domains: selectedDomains,
         template: selectedTemplate
       });
       
-      setGeneratedPosts(response.posts);
+      setGeneratedPosts(response.data?.posts || []);
     } catch (error) {
       console.error('Failed to generate trending posts:', error);
     } finally {
@@ -85,17 +85,19 @@ const Premium = () => {
     
     setIsScheduling(true);
     try {
-      const response = await premiumApi.scheduleViralBatch({
+      await premiumApi.scheduleBatch({
         posts: generatedPosts,
         scheduleTime: '09:00'
       });
       
-      setScheduledBatches(prev => [response, ...prev]);
+      // Refresh the batches list
+      const batchesResponse = await premiumApi.getBatches();
+      setScheduledBatches(batchesResponse.data?.batches || []);
       setGeneratedPosts([]);
       
       // Refresh analytics
-      const analyticsData = await premiumApi.getAnalytics();
-      setAnalytics(analyticsData);
+      const analyticsResponse = await premiumApi.getAnalytics();
+      setAnalytics(analyticsResponse.data || null);
       
     } catch (error) {
       console.error('Failed to schedule batch:', error);
@@ -106,27 +108,21 @@ const Premium = () => {
 
   const handleBatchAction = async (batchId: string, action: 'pause' | 'resume' | 'cancel') => {
     try {
-      let response;
       switch (action) {
         case 'pause':
-          response = await premiumApi.pauseBatch(batchId);
+          await premiumApi.pauseBatch(batchId);
           break;
         case 'resume':
-          response = await premiumApi.resumeBatch(batchId);
+          await premiumApi.resumeBatch(batchId);
           break;
         case 'cancel':
-          response = await premiumApi.cancelBatch(batchId);
+          await premiumApi.cancelBatch(batchId);
           break;
       }
       
-      // Update local state
-      setScheduledBatches(prev => 
-        prev.map(batch => 
-          batch.id === batchId 
-            ? { ...batch, status: response.status }
-            : batch
-        )
-      );
+      // Refresh the batches list to get updated status
+      const batchesResponse = await premiumApi.getBatches();
+      setScheduledBatches(batchesResponse.data?.batches || []);
       
     } catch (error) {
       console.error(`Failed to ${action} batch:`, error);

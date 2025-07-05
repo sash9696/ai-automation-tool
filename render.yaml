@@ -1,0 +1,94 @@
+services:
+  # Frontend Service
+  - type: web
+    name: ai-automation-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://ai-automation-backend.onrender.com/api
+      - key: VITE_APP_NAME
+        value: "LinkedIn AI Automation"
+      - key: VITE_APP_VERSION
+        value: "1.0.0"
+
+  # Backend Service
+  - type: web
+    name: ai-automation-backend
+    env: node
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: LINKEDIN_CLIENT_ID
+        sync: false
+      - key: LINKEDIN_CLIENT_SECRET
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-automation-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: ai-automation-redis
+          property: connectionString
+
+  # AI Service
+  - type: web
+    name: ai-automation-ai-service
+    env: node
+    buildCommand: cd ai-service && npm install
+    startCommand: cd ai-service && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10001
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: BACKEND_URL
+        value: https://ai-automation-backend.onrender.com/api
+
+  # Scheduler Service
+  - type: worker
+    name: ai-automation-scheduler
+    env: node
+    buildCommand: cd scheduler && npm install
+    startCommand: cd scheduler && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10002
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-automation-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: ai-automation-redis
+          property: connectionString
+      - key: BACKEND_URL
+        value: https://ai-automation-backend.onrender.com/api
+
+databases:
+  - name: ai-automation-db
+    databaseName: ai_automation
+    user: ai_automation_user
+
+services:
+  - type: redis
+    name: ai-automation-redis
+    ipAllowList: [] 

@@ -1,0 +1,26 @@
+{
+  "name": "ai-automation-tool-railway",
+  "version": "1.0.0",
+  "description": "AI Automation Tool deployed on Railway",
+  "main": "index.js",
+  "scripts": {
+    "start": "node railway-start.js",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm install && npm run build",
+    "build:backend": "cd backend && npm install",
+    "build:ai": "cd ai-service && npm install",
+    "build:scheduler": "cd scheduler && npm install",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:ai\" \"npm run dev:scheduler\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:ai": "cd ai-service && npm run dev",
+    "dev:scheduler": "cd scheduler && npm run dev"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+} 
