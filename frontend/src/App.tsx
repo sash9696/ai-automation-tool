@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import PostGenerator from './pages/PostGenerator';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import Premium from './pages/Premium';
 import { linkedInApi } from './services/api';
 import type { LinkedInAuthResponse } from './types';
 
@@ -47,6 +48,7 @@ function App() {
             <Route path="/generate" element={<PostGenerator />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/premium" element={<Premium />} />
           </Routes>
         </main>
       </div>

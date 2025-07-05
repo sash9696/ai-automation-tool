@@ -121,100 +121,37 @@ export const publishToLinkedIn = async (content) => {
   let authorUrn = null;
 
   try {
-    // Try to get user profile using OpenID Connect /v2/userinfo endpoint
-    try {
-      console.log('📝 Fetching user profile via OpenID Connect /v2/userinfo...');
-      const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+    // Get user profile using OpenID Connect /v2/userinfo endpoint
+    console.log('📝 Fetching user profile via OpenID Connect /v2/userinfo...');
+    const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-      if (profileResponse.ok) {
-        const profileData = await profileResponse.json();
-        console.log('📝 OpenID Connect userinfo response:', profileData);
-        
-        if (profileData.sub) {
-          // The 'sub' field contains the LinkedIn member ID
-          authorUrn = `urn:li:person:${profileData.sub}`;
-          console.log('📝 Got user profile URN from OpenID Connect:', authorUrn);
-        } else {
-          console.log('📝 No sub field in userinfo response');
-        }
+    if (profileResponse.ok) {
+      const profileData = await profileResponse.json();
+      console.log('📝 OpenID Connect userinfo response:', profileData);
+      
+      if (profileData.sub) {
+        // The 'sub' field contains the LinkedIn member ID
+        authorUrn = `urn:li:person:${profileData.sub}`;
+        console.log('📝 Got user profile URN from OpenID Connect:', authorUrn);
       } else {
-        const errorText = await profileResponse.text();
-        console.log('📝 OpenID Connect userinfo failed:', profileResponse.status, errorText);
+        console.log('📝 No sub field in userinfo response');
       }
-    } catch (error) {
-      console.log('📝 OpenID Connect profile fetch failed:', error.message);
+    } else {
+      const errorText = await profileResponse.text();
+      console.log('📝 OpenID Connect userinfo failed:', profileResponse.status, errorText);
     }
 
-    // If we still don't have an author URN, try to use a fallback
+    // If we don't have an author URN, we can't post
     if (!authorUrn) {
-      // For development/testing, use a mock URN if configured
-      if (process.env.NODE_ENV === 'development' && process.env.USE_MOCK_LINKEDIN === 'true') {
-        authorUrn = 'urn:li:person:mock_user_123';
-        console.log('📝 Using mock author URN for development:', authorUrn);
-      } else {
-        // Since we have w_member_social permission, we can try to post without the profile URN
-        // LinkedIn API sometimes allows posting with just the access token
-        console.log('📝 No profile URN available, attempting to post with access token only...');
-        
-        // Try posting without author URN first (as authenticated user)
-        try {
-          const postDataWithoutAuthor = {
-            lifecycleState: 'PUBLISHED',
-            specificContent: {
-              'com.linkedin.ugc.ShareContent': {
-                shareCommentary: {
-                  text: content
-                },
-                shareMediaCategory: 'NONE'
-              }
-            },
-            visibility: {
-              'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
-            }
-          };
-
-          console.log('📝 Attempting to post to LinkedIn without author URN:', JSON.stringify(postDataWithoutAuthor, null, 2));
-
-          const postResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-              'X-Restli-Protocol-Version': '2.0.0',
-              'LinkedIn-Version': '202401',
-            },
-            body: JSON.stringify(postDataWithoutAuthor),
-          });
-
-          if (postResponse.ok) {
-            const postResult = await postResponse.json();
-            console.log('📝 LinkedIn post published successfully without author URN:', postResult.id);
-            return {
-              success: true,
-              message: 'Post published to LinkedIn successfully',
-              postId: postResult.id,
-              postUrn: postResult.id
-            };
-          } else {
-            const errorText = await postResponse.text();
-            console.log('📝 Posting without author URN failed:', postResponse.status, errorText);
-          }
-        } catch (error) {
-          console.log('📝 Error posting without author URN:', error.message);
-        }
-        
-        // Fallback to a default URN
-        authorUrn = 'urn:li:person:default_user';
-        console.log('📝 Using fallback author URN:', authorUrn);
-      }
+      throw new Error('Unable to get LinkedIn user profile - cannot determine author URN');
     }
 
-    // Create post using LinkedIn UGC API (exactly as per LinkedIn documentation)
+    // Create post using LinkedIn UGC API with the real author URN
     const postData = {
       author: authorUrn,
       lifecycleState: 'PUBLISHED',
@@ -233,8 +170,8 @@ export const publishToLinkedIn = async (content) => {
 
     console.log('📝 Attempting to post to LinkedIn with data:', JSON.stringify(postData, null, 2));
 
-    // Try the LinkedIn UGC API for posting
-    let postResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+    // Post to LinkedIn UGC API
+    const postResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -244,8 +181,6 @@ export const publishToLinkedIn = async (content) => {
       },
       body: JSON.stringify(postData),
     });
-
-
 
     // Log the response details for debugging
     console.log('📝 LinkedIn API Response Status:', postResponse.status);

@@ -12,6 +12,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -23,6 +24,12 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Add premium user header for premium features
+  if (config.url?.includes('/premium')) {
+    config.headers['x-premium-user'] = 'true';
+  }
+  
   return config;
 });
 
@@ -84,6 +91,18 @@ export const postsApi = {
   getAnalytics: async (id: string): Promise<Post['analytics']> => {
     const response = await api.get<ApiResponse<Post['analytics']>>(`/posts/${id}/analytics`);
     return response.data.data!;
+  },
+
+  // Optimize post
+  optimize: async (request: any): Promise<any> => {
+    const response = await api.post('/posts/optimize', request);
+    return response.data.data;
+  },
+
+  // Analyze post
+  analyze: async (request: any): Promise<any> => {
+    const response = await api.post('/posts/analyze', request);
+    return response.data.data;
   },
 };
 
@@ -149,6 +168,18 @@ export const linkedInApi = {
     const response = await api.get<ApiResponse<any[]>>('/posts/optimal-times');
     return response.data.data!;
   },
+
+  // Publish post to LinkedIn
+  publishPost: async (postData: any): Promise<any> => {
+    const response = await api.post('/linkedin/publish', postData);
+    return response.data.data;
+  },
+
+  // Get LinkedIn profile
+  getProfile: async (): Promise<any> => {
+    const response = await api.get('/linkedin/profile');
+    return response.data.data;
+  },
 };
 
 export const settingsApi = {
@@ -162,6 +193,63 @@ export const settingsApi = {
   update: async (settings: Partial<AppSettings>): Promise<AppSettings> => {
     const response = await api.put<ApiResponse<AppSettings>>('/settings', settings);
     return response.data.data!;
+  },
+};
+
+export const premiumApi = {
+  // Generate trending posts
+  generateTrendingPosts: async (request: {
+    domains?: string[];
+    template?: string;
+    scheduleTime?: string;
+  }): Promise<any> => {
+    const response = await api.post('/premium/generate-trending', request);
+    return response.data.data;
+  },
+
+  // Schedule viral batch
+  scheduleViralBatch: async (request: {
+    posts: any[];
+    scheduleTime?: string;
+  }): Promise<any> => {
+    const response = await api.post('/premium/schedule-batch', request);
+    return response.data.data;
+  },
+
+  // Get scheduled batches
+  getScheduledBatches: async (): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>('/premium/scheduled-batches');
+    return response.data.data!;
+  },
+
+  // Get analytics
+  getAnalytics: async (): Promise<any> => {
+    const response = await api.get<ApiResponse<any>>('/premium/analytics');
+    return response.data.data;
+  },
+
+  // Pause batch
+  pauseBatch: async (batchId: string): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>(`/premium/batches/${batchId}/pause`);
+    return response.data.data;
+  },
+
+  // Resume batch
+  resumeBatch: async (batchId: string): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>(`/premium/batches/${batchId}/resume`);
+    return response.data.data;
+  },
+
+  // Cancel batch
+  cancelBatch: async (batchId: string): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>(`/premium/batches/${batchId}/cancel`);
+    return response.data.data;
+  },
+
+  // Get batch details
+  getBatchDetails: async (batchId: string): Promise<any> => {
+    const response = await api.get<ApiResponse<any>>(`/premium/batches/${batchId}`);
+    return response.data.data;
   },
 };
 

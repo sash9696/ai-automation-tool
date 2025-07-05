@@ -10,6 +10,7 @@ import { dirname, join } from 'path';
 import postsRoutes from './routes/posts.js';
 import linkedInRoutes from './routes/linkedin.js';
 import settingsRoutes from './routes/settings.js';
+import premiumRoutes from './routes/premium.js';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js';
@@ -60,6 +61,7 @@ app.get('/health', (req, res) => {
 app.use('/api/posts', postsRoutes);
 app.use('/api/linkedin', linkedInRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/premium', premiumRoutes);
 
 // Mock endpoints for development
 if (process.env.NODE_ENV === 'development') {
@@ -117,6 +119,7 @@ app.listen(PORT, () => {
   logger.info(`🚀 LinkedIn AI Backend server running on port ${PORT}`);
   logger.info(`📊 Health check: http://localhost:${PORT}/health`);
   logger.info(`🔗 API Base URL: http://localhost:${PORT}/api`);
+  logger.info(`💎 Premium API: http://localhost:${PORT}/api/premium`);
   
   if (process.env.NODE_ENV === 'development') {
     logger.info(`🧪 Development mode enabled`);

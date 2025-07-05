@@ -1,4 +1,6 @@
-// Mock scheduler service for development
+// Scheduler service with real LinkedIn integration
+import { publishToLinkedIn } from './linkedInService.js';
+
 const scheduledJobs = new Map();
 
 export const schedulePostJob = async (post, scheduledTime) => {
@@ -15,22 +17,49 @@ export const schedulePostJob = async (post, scheduledTime) => {
     // Store job info
     scheduledJobs.set(jobId, {
       postId: post.id,
+      post: post,
       scheduledTime,
       status: 'scheduled',
       createdAt: new Date()
     });
 
-    // Mock job scheduling (in real implementation, this would use BullMQ or similar)
     console.log(`⏰ Scheduled post ${post.id} for ${scheduledTime.toISOString()}`);
     
-    // Simulate job execution after delay
-    setTimeout(() => {
-      console.log(`🚀 Executing scheduled post: ${post.content}`);
-      scheduledJobs.set(jobId, {
-        ...scheduledJobs.get(jobId),
-        status: 'completed',
-        executedAt: new Date()
-      });
+    // Schedule job execution after delay
+    setTimeout(async () => {
+      try {
+        console.log(`🚀 Executing scheduled post: ${post.content}`);
+        
+        // Update job status to executing
+        scheduledJobs.set(jobId, {
+          ...scheduledJobs.get(jobId),
+          status: 'executing',
+          executedAt: new Date()
+        });
+
+        // Actually post to LinkedIn
+        const result = await publishToLinkedIn(post.content);
+        
+        // Update job status to completed
+        scheduledJobs.set(jobId, {
+          ...scheduledJobs.get(jobId),
+          status: 'completed',
+          result: result,
+          completedAt: new Date()
+        });
+        
+        console.log(`✅ Scheduled post executed successfully:`, result);
+      } catch (error) {
+        console.error(`❌ Failed to execute scheduled post:`, error);
+        
+        // Update job status to failed
+        scheduledJobs.set(jobId, {
+          ...scheduledJobs.get(jobId),
+          status: 'failed',
+          error: error.message,
+          failedAt: new Date()
+        });
+      }
     }, Math.min(delay, 5000)); // Cap at 5 seconds for demo
 
     return {

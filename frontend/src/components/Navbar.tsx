@@ -4,6 +4,7 @@ import {
   Sparkles, 
   BarChart3, 
   Settings,
+  Crown,
   User 
 } from 'lucide-react';
 import type { LinkedInAuthResponse } from '../types';
@@ -19,6 +20,7 @@ const Navbar = ({ linkedInProfile }: NavbarProps) => {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Generate Post', href: '/generate', icon: Sparkles },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { name: 'Premium', href: '/premium', icon: Crown },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
@@ -52,6 +54,11 @@ const Navbar = ({ linkedInProfile }: NavbarProps) => {
                 >
                   <item.icon className="w-5 h-5" />
                   <span>{item.name}</span>
+                  {item.name === 'Premium' && (
+                    <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs px-2 py-1 rounded-full">
+                      PRO
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -59,32 +66,29 @@ const Navbar = ({ linkedInProfile }: NavbarProps) => {
 
           {/* LinkedIn Status */}
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              {linkedInProfile ? (
-                <div className="flex items-center space-x-2">
-                  {linkedInProfile.profilePicture ? (
-                    <img
-                      src={linkedInProfile.profilePicture}
-                      alt="Profile"
-                      className="w-8 h-8 rounded-full"
-                    />
-                  ) : (
-                    <User className="w-8 h-8 text-blue-600" />
-                  )}
-                  <div className="hidden sm:block">
-                    <p className="text-sm font-medium text-gray-900">
-                      {linkedInProfile.firstName} {linkedInProfile.lastName}
-                    </p>
-                    <p className="text-xs text-green-600">Connected</p>
-                  </div>
+            {linkedInProfile ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-green-600" />
                 </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">Not Connected</span>
+                <div className="hidden sm:block">
+                  <p className="text-sm font-medium text-gray-900">
+                    {linkedInProfile.firstName} {linkedInProfile.lastName}
+                  </p>
+                  <p className="text-xs text-gray-500">LinkedIn Connected</p>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-gray-400" />
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-sm font-medium text-gray-900">Not Connected</p>
+                  <p className="text-xs text-gray-500">Connect LinkedIn</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

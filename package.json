@@ -10,11 +10,18 @@
     "scheduler"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:ai\" \"npm run dev:scheduler\"",
+    "dev": "npm run kill && concurrently --kill-others-on-fail --prefix \"[{name}]\" --names \"frontend,backend,ai\" \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:ai\"",
+    "dev:all": "npm run kill && concurrently --kill-others-on-fail --prefix \"[{name}]\" --names \"frontend,backend,ai,scheduler\" \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:ai\" \"npm run dev:scheduler\"",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev",
     "dev:ai": "cd ai-service && npm run dev",
     "dev:scheduler": "cd scheduler && npm run dev",
+    "kill": "npm run kill:ports && npm run kill:processes",
+    "kill:ports": "lsof -ti:3001,3002,5173,5174,5175,5176,5177 | xargs kill -9 2>/dev/null || true",
+    "kill:processes": "pkill -f \"node.*3001\" || true && pkill -f \"node.*3002\" || true && pkill -f \"vite\" || true && pkill -f \"nodemon\" || true",
+    "start": "npm run dev",
+    "stop": "npm run kill",
+    "restart": "npm run kill && sleep 2 && npm run dev",
     "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "cd frontend && npm run build",
     "build:backend": "cd backend && npm run build",
@@ -23,7 +30,8 @@
     "test:backend": "cd backend && npm test",
     "lint": "npm run lint:frontend && npm run lint:backend",
     "lint:frontend": "cd frontend && npm run lint",
-    "lint:backend": "cd backend && npm run lint"
+    "lint:backend": "cd backend && npm run lint",
+    "status": "echo \"🔍 Checking service status...\" && curl -s http://localhost:3001/health > /dev/null && echo \"✅ Backend: Running on port 3001\" || echo \"❌ Backend: Not running\" && curl -s http://localhost:3002/health > /dev/null && echo \"✅ AI Service: Running on port 3002\" || echo \"❌ AI Service: Not running\" && curl -s -I http://localhost:5173 > /dev/null && echo \"✅ Frontend: Running on port 5173\" || echo \"❌ Frontend: Not running\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
