@@ -17,6 +17,9 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { logger } from './utils/logger.js';
 
+// Import background worker
+import backgroundWorker from './services/backgroundWorker.js';
+
 // Load environment variables
 dotenv.config();
 
@@ -114,27 +117,27 @@ app.use(notFoundHandler);
 // Error handler (must be last)
 app.use(errorHandler);
 
-// Start server
+// Start the server
 app.listen(PORT, () => {
-  logger.info(`🚀 LinkedIn AI Backend server running on port ${PORT}`);
-  logger.info(`📊 Health check: http://localhost:${PORT}/health`);
-  logger.info(`🔗 API Base URL: http://localhost:${PORT}/api`);
-  logger.info(`💎 Premium API: http://localhost:${PORT}/api/premium`);
+  console.log(`🚀 LinkedIn AI Backend running on port ${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
   
-  if (process.env.NODE_ENV === 'development') {
-    logger.info(`🧪 Development mode enabled`);
-    logger.info(`🔧 Mock endpoints available at /api/mock/*`);
-  }
+  // Start background worker for scheduled posts
+  backgroundWorker.start();
+  console.log('🔄 Background worker started for scheduled posts');
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
+  console.log('🛑 Received SIGTERM, shutting down gracefully...');
+  backgroundWorker.stop();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully');
+  console.log('🛑 Received SIGINT, shutting down gracefully...');
+  backgroundWorker.stop();
   process.exit(0);
 });
 

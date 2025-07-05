@@ -19,6 +19,7 @@ const premiumRequestSchema = Joi.object({
     Joi.string().valid('technology', 'frontend', 'ai')
   ).min(1).max(3).optional().default(['technology', 'frontend', 'ai']),
   template: Joi.string().valid('viral', 'story', 'educational', 'controversy', 'listicle').optional(),
+  count: Joi.number().integer().min(1).max(10).optional().default(7),
   scheduleTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional().default('09:00')
 });
 

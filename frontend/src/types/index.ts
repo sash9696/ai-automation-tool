@@ -99,6 +99,21 @@ export interface ScheduledBatch {
   };
 }
 
+export interface ScheduledJob {
+  id: string;
+  batch_id: string;
+  post_id: string;
+  post_data: ViralPost;
+  scheduled_time: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  published_at?: string;
+  linkedin_post_id?: string;
+  linkedin_post_urn?: string;
+  error_message?: string;
+}
+
 export interface PremiumAnalytics {
   overview: {
     totalPosts: number;

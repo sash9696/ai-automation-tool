@@ -5,7 +5,11 @@ import type {
   SchedulePostRequest, 
   LinkedInAuthResponse,
   AppSettings,
-  ApiResponse 
+  ApiResponse,
+  ViralPost,
+  ScheduledBatch,
+  PremiumAnalytics,
+  ScheduledJob
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
@@ -197,60 +201,64 @@ export const settingsApi = {
 };
 
 export const premiumApi = {
-  // Generate trending posts
-  generateTrendingPosts: async (request: {
-    domains?: string[];
-    template?: string;
-    scheduleTime?: string;
-  }): Promise<any> => {
-    const response = await api.post('/premium/generate-trending', request);
-    return response.data.data;
+  // Generate trending content
+  generateTrending: async (data: { domains: string[], template?: string, count?: number }): Promise<ApiResponse<{ posts: ViralPost[], totalPosts: number, domains: string[], template: string, generatedAt: string }>> => {
+    const response = await fetch(`${API_BASE_URL}/premium/generate-trending`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return response.json();
   },
 
-  // Schedule viral batch
-  scheduleViralBatch: async (request: {
-    posts: any[];
-    scheduleTime?: string;
-  }): Promise<any> => {
-    const response = await api.post('/premium/schedule-batch', request);
-    return response.data.data;
+  // Schedule batch
+  scheduleBatch: async (data: { posts: ViralPost[], scheduleTime?: string }): Promise<ApiResponse<{ batchId: string, totalPosts: number, scheduleTime: string, status: string, message: string, createdAt: string }>> => {
+    const response = await fetch(`${API_BASE_URL}/premium/schedule-batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return response.json();
   },
 
-  // Get scheduled batches
-  getScheduledBatches: async (): Promise<any[]> => {
-    const response = await api.get<ApiResponse<any[]>>('/premium/scheduled-batches');
-    return response.data.data!;
-  },
-
-  // Get analytics
-  getAnalytics: async (): Promise<any> => {
-    const response = await api.get<ApiResponse<any>>('/premium/analytics');
-    return response.data.data;
-  },
-
-  // Pause batch
-  pauseBatch: async (batchId: string): Promise<any> => {
-    const response = await api.post<ApiResponse<any>>(`/premium/batches/${batchId}/pause`);
-    return response.data.data;
-  },
-
-  // Resume batch
-  resumeBatch: async (batchId: string): Promise<any> => {
-    const response = await api.post<ApiResponse<any>>(`/premium/batches/${batchId}/resume`);
-    return response.data.data;
-  },
-
-  // Cancel batch
-  cancelBatch: async (batchId: string): Promise<any> => {
-    const response = await api.post<ApiResponse<any>>(`/premium/batches/${batchId}/cancel`);
-    return response.data.data;
+  // Get all batches
+  getBatches: async (): Promise<ApiResponse<{ batches: ScheduledBatch[], totalBatches: number }>> => {
+    const response = await fetch(`${API_BASE_URL}/premium/batches`);
+    return response.json();
   },
 
   // Get batch details
-  getBatchDetails: async (batchId: string): Promise<any> => {
-    const response = await api.get<ApiResponse<any>>(`/premium/batches/${batchId}`);
-    return response.data.data;
+  getBatchDetails: async (batchId: string): Promise<ApiResponse<ScheduledBatch>> => {
+    const response = await fetch(`${API_BASE_URL}/premium/batches/${batchId}`);
+    return response.json();
   },
+
+  // Cancel batch
+  cancelBatch: async (batchId: string): Promise<ApiResponse<{ success: boolean, message: string }>> => {
+    const response = await fetch(`${API_BASE_URL}/premium/batches/${batchId}`, {
+      method: 'DELETE'
+    });
+    return response.json();
+  },
+
+  // Get scheduled jobs
+  getScheduledJobs: async (limit?: number): Promise<ApiResponse<{ jobs: ScheduledJob[], totalJobs: number }>> => {
+    const params = limit ? `?limit=${limit}` : '';
+    const response = await fetch(`${API_BASE_URL}/premium/jobs${params}`);
+    return response.json();
+  },
+
+  // Get analytics
+  getAnalytics: async (): Promise<ApiResponse<PremiumAnalytics>> => {
+    const response = await fetch(`${API_BASE_URL}/premium/analytics`);
+    return response.json();
+  },
+
+  // Get worker status
+  getWorkerStatus: async (): Promise<ApiResponse<{ isRunning: boolean, lastCheck: string, stats: { total: number, pending: number, completed: number, failed: number } }>> => {
+    const response = await fetch(`${API_BASE_URL}/premium/worker/status`);
+    return response.json();
+  }
 };
 
 export default api; 

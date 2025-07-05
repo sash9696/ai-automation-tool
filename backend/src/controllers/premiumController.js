@@ -1,8 +1,13 @@
 import { TrendingContentFactory } from '../services/trendingContentFactory.js';
 import { ViralTemplateEngine } from '../services/viralTemplateEngine.js';
-import { ContentScheduler } from '../services/contentScheduler.js';
+import contentScheduler from '../services/contentScheduler.js';
 import { PremiumAnalytics } from '../services/premiumAnalytics.js';
 import { logger } from '../utils/logger.js';
+
+// Create instances
+const trendingContentFactory = new TrendingContentFactory();
+const viralTemplateEngine = new ViralTemplateEngine();
+const premiumAnalytics = new PremiumAnalytics();
 
 // Mock premium user check - in production, implement proper auth
 const isPremiumUser = (req) => {
@@ -10,156 +15,282 @@ const isPremiumUser = (req) => {
   return true;
 };
 
-export const generateTrendingPosts = async (req, res) => {
+// Generate trending content
+export const generateTrendingContent = async (req, res) => {
   try {
     if (!isPremiumUser(req)) {
       return res.status(403).json({
         success: false,
-        error: 'Premium feature requires subscription',
-        message: 'Upgrade to premium to access viral content scheduler'
+        message: 'Premium access required'
       });
     }
 
-    const { domains = ['technology', 'frontend', 'ai'] } = req.body;
-    
-    logger.info(`🎯 Generating trending posts for domains: ${domains.join(', ')}`);
-    
-    const factory = new TrendingContentFactory();
-    const templateEngine = new ViralTemplateEngine();
-    
-    const trendingPosts = [];
-    
+    const { domains = ['technology'], template = 'viral', count = 7 } = req.body;
+
+    logger.info(`🎯 Generating trending content for domains: ${domains.join(', ')}`);
+
+    // Generate trending posts for each domain
+    let posts = [];
     for (const domain of domains) {
-      try {
-        const content = await factory.createContent(domain);
-        const formattedPosts = content.map(item => 
-          templateEngine.applyTemplate(item, 'viral')
-        );
-        trendingPosts.push(...formattedPosts);
-      } catch (error) {
-        logger.error(`Failed to generate content for domain ${domain}:`, error);
-      }
+      const domainPosts = await trendingContentFactory.createContent(domain);
+      posts = posts.concat(domainPosts);
     }
-    
-    // Take top 7 posts based on viral potential
-    const topPosts = trendingPosts
-      .sort((a, b) => b.viralScore - a.viralScore)
-      .slice(0, 7);
-    
+
+    // Limit to requested count
+    posts = posts.slice(0, count);
+
+    // Apply viral template
+    const viralPosts = posts.map(post => 
+      viralTemplateEngine.applyTemplate(post, template)
+    );
+
+    logger.info(`✅ Generated ${viralPosts.length} viral posts`);
+
     res.json({
       success: true,
       data: {
-        posts: topPosts,
-        batchId: `batch_${Date.now()}`,
-        generatedAt: new Date().toISOString(),
+        posts: viralPosts,
+        totalPosts: viralPosts.length,
         domains,
-        totalGenerated: trendingPosts.length,
-        selectedCount: topPosts.length
-      },
-      message: `Generated ${topPosts.length} viral posts across ${domains.length} domains`
+        template,
+        generatedAt: new Date().toISOString()
+      }
     });
-    
+
   } catch (error) {
-    logger.error('Premium content generation failed:', error);
+    logger.error('❌ Error generating trending content:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to generate trending posts',
-      message: error.message
+      message: 'Failed to generate trending content',
+      error: error.message
     });
   }
 };
 
-export const scheduleViralBatch = async (req, res) => {
+// Schedule batch of posts
+export const scheduleBatch = async (req, res) => {
   try {
     if (!isPremiumUser(req)) {
       return res.status(403).json({
         success: false,
-        error: 'Premium feature requires subscription'
+        message: 'Premium access required'
       });
     }
 
     const { posts, scheduleTime = '09:00' } = req.body;
-    
+
     if (!posts || !Array.isArray(posts) || posts.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'Posts array is required'
+        message: 'Posts array is required and must not be empty'
       });
     }
-    
-    const scheduler = new ContentScheduler();
-    const scheduledBatch = await scheduler.scheduleBatch(posts, scheduleTime);
-    
-    logger.info(`📅 Scheduled viral batch with ${posts.length} posts`);
-    
+
+    logger.info(`📅 Scheduling batch with ${posts.length} posts for ${scheduleTime}`);
+
+    // Schedule the batch
+    const batch = await contentScheduler.scheduleBatch(posts, scheduleTime);
+
+    logger.info(`✅ Batch ${batch.id} scheduled successfully`);
+
     res.json({
       success: true,
-      data: scheduledBatch,
-      message: `Successfully scheduled ${posts.length} posts for 9 AM daily`
+      data: {
+        batchId: batch.id,
+        totalPosts: batch.totalPosts,
+        scheduleTime,
+        status: 'scheduled',
+        message: `Successfully scheduled ${posts.length} posts for ${scheduleTime} daily`,
+        createdAt: batch.createdAt
+      }
     });
-    
+
   } catch (error) {
-    logger.error('Viral batch scheduling failed:', error);
+    logger.error('❌ Error scheduling batch:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to schedule viral batch',
-      message: error.message
+      message: 'Failed to schedule batch',
+      error: error.message
     });
   }
 };
 
-export const getScheduledBatches = async (req, res) => {
+// Get all batches
+export const getBatches = async (req, res) => {
   try {
     if (!isPremiumUser(req)) {
       return res.status(403).json({
         success: false,
-        error: 'Premium feature requires subscription'
+        message: 'Premium access required'
       });
     }
 
-    const scheduler = new ContentScheduler();
-    const batches = await scheduler.getScheduledBatches();
-    
+    const batches = await contentScheduler.getAllBatches();
+
     res.json({
       success: true,
-      data: batches,
-      message: `Found ${batches.length} scheduled batches`
+      data: {
+        batches,
+        totalBatches: batches.length
+      }
     });
-    
+
   } catch (error) {
-    logger.error('Failed to get scheduled batches:', error);
+    logger.error('❌ Error getting batches:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch scheduled batches',
-      message: error.message
+      message: 'Failed to get batches',
+      error: error.message
     });
   }
 };
 
-export const getPremiumAnalytics = async (req, res) => {
+// Get batch details
+export const getBatchDetails = async (req, res) => {
   try {
     if (!isPremiumUser(req)) {
       return res.status(403).json({
         success: false,
-        error: 'Premium feature requires subscription'
+        message: 'Premium access required'
       });
     }
 
-    const analytics = new PremiumAnalytics();
-    const data = await analytics.getViralMetrics();
-    
+    const { batchId } = req.params;
+    const batch = await contentScheduler.getBatchStatus(batchId);
+
+    if (!batch) {
+      return res.status(404).json({
+        success: false,
+        message: 'Batch not found'
+      });
+    }
+
     res.json({
       success: true,
-      data,
-      message: 'Premium analytics retrieved successfully'
+      data: batch
     });
-    
+
   } catch (error) {
-    logger.error('Premium analytics failed:', error);
+    logger.error(`❌ Error getting batch details for ${req.params.batchId}:`, error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch premium analytics',
-      message: error.message
+      message: 'Failed to get batch details',
+      error: error.message
+    });
+  }
+};
+
+// Cancel batch
+export const cancelBatch = async (req, res) => {
+  try {
+    if (!isPremiumUser(req)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Premium access required'
+      });
+    }
+
+    const { batchId } = req.params;
+    const result = await contentScheduler.cancelBatch(batchId);
+
+    res.json({
+      success: true,
+      data: result
+    });
+
+  } catch (error) {
+    logger.error(`❌ Error cancelling batch ${req.params.batchId}:`, error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel batch',
+      error: error.message
+    });
+  }
+};
+
+// Get scheduled jobs
+export const getScheduledJobs = async (req, res) => {
+  try {
+    if (!isPremiumUser(req)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Premium access required'
+      });
+    }
+
+    const { limit = 50 } = req.query;
+    const jobs = await contentScheduler.getScheduledJobs(parseInt(limit));
+
+    res.json({
+      success: true,
+      data: {
+        jobs,
+        totalJobs: jobs.length
+      }
+    });
+
+  } catch (error) {
+    logger.error('❌ Error getting scheduled jobs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get scheduled jobs',
+      error: error.message
+    });
+  }
+};
+
+// Get analytics
+export const getAnalytics = async (req, res) => {
+  try {
+    if (!isPremiumUser(req)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Premium access required'
+      });
+    }
+
+    const analytics = await premiumAnalytics.getViralMetrics();
+
+    res.json({
+      success: true,
+      data: analytics
+    });
+
+  } catch (error) {
+    logger.error('❌ Error getting analytics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get analytics',
+      error: error.message
+    });
+  }
+};
+
+// Get worker status
+export const getWorkerStatus = async (req, res) => {
+  try {
+    if (!isPremiumUser(req)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Premium access required'
+      });
+    }
+
+    // Import here to avoid circular dependency
+    const backgroundWorker = (await import('../services/backgroundWorker.js')).default;
+    const status = backgroundWorker.getStatus();
+
+    res.json({
+      success: true,
+      data: status
+    });
+
+  } catch (error) {
+    logger.error('❌ Error getting worker status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get worker status',
+      error: error.message
     });
   }
 }; 

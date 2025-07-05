@@ -1,15 +1,10 @@
 import { logger } from '../utils/logger.js';
 import { publishToLinkedIn } from './linkedInService.js';
+import databaseService from './databaseService.js';
 
-// In-memory storage for scheduled batches (in production, use Redis/Database)
-const scheduledBatches = new Map();
-const batchQueue = [];
-
-export class ContentScheduler {
+class ContentScheduler {
   constructor() {
     this.batchCounter = 0;
-    this.scheduledBatches = scheduledBatches;
-    this.batchQueue = batchQueue;
   }
 
   async scheduleBatch(posts, scheduleTime = '09:00') {
@@ -21,54 +16,63 @@ export class ContentScheduler {
       // Calculate 7-day schedule starting from tomorrow
       const schedule = this.calculateSchedule(scheduleTime);
       
+      // Create batch record
+      databaseService.createBatch({
+        id: batchId,
+        name: `Viral Content Batch ${this.batchCounter}`,
+        scheduleTime: scheduleTime,
+        totalPosts: posts.length
+      });
+
+      // Schedule each post
+      const scheduledJobs = [];
+      
+      for (let i = 0; i < posts.length; i++) {
+        const post = posts[i];
+        logger.info(`📝 Processing post ${i}:`, JSON.stringify(post, null, 2));
+        
+        const jobId = `${batchId}_post_${i + 1}`;
+        const scheduledDate = schedule[i];
+        
+        // Create job in database
+        databaseService.createScheduledJob({
+          id: jobId,
+          batchId: batchId,
+          postId: post.postId || `post_${i + 1}`,
+          postData: {
+            ...post,
+            scheduledDate: scheduledDate,
+            status: 'scheduled'
+          },
+          scheduledTime: scheduledDate
+        });
+
+        scheduledJobs.push({
+          id: jobId,
+          postId: post.postId || `post_${i + 1}`,
+          title: post.title,
+          scheduledDate: scheduledDate,
+          status: 'scheduled'
+        });
+      }
+
       const batch = {
         id: batchId,
-        posts: posts.map((post, index) => {
-          logger.info(`📝 Processing post ${index}:`, JSON.stringify(post, null, 2));
-          return {
-            ...post,
-            scheduledDate: schedule[index],
-            status: 'scheduled',
-            postId: `${batchId}_post_${index + 1}`
-          };
-        }),
+        posts: scheduledJobs,
         scheduleTime,
         createdAt: new Date(),
-        status: 'active',
         totalPosts: posts.length,
         completedPosts: 0,
-        failedPosts: 0
+        failedPosts: 0,
+        status: 'active'
       };
+
+      logger.info(`✅ Batch ${batchId} scheduled successfully with ${posts.length} posts`);
       
-      // Store the batch
-      this.scheduledBatches.set(batchId, batch);
-      
-      // Add to processing queue
-      this.batchQueue.push(batchId);
-      
-      logger.info(`📅 Scheduled batch ${batchId} with ${posts.length} posts`);
-      
-      // Start processing if not already running
-      this.startProcessing();
-      
-      return {
-        batchId,
-        schedule: schedule.map((date, index) => ({
-          day: index + 1,
-          date: date.toISOString(),
-          post: {
-            title: posts[index]?.title || 'Untitled',
-            topic: posts[index]?.topic || 'General',
-            viralScore: posts[index]?.viralScore || 0
-          }
-        })),
-        status: 'scheduled',
-        message: `Successfully scheduled ${posts.length} posts for 9 AM daily`
-      };
-      
+      return batch;
     } catch (error) {
-      logger.error('Batch scheduling failed:', error);
-      throw new Error(`Failed to schedule batch: ${error.message}`);
+      logger.error('❌ Error scheduling batch:', error);
+      throw error;
     }
   }
 
@@ -81,7 +85,7 @@ export class ContentScheduler {
     startDate.setDate(startDate.getDate() + 1);
     startDate.setHours(hours, minutes, 0, 0);
     
-    // Generate 7 days of schedule
+    // Generate 7-day schedule
     for (let i = 0; i < 7; i++) {
       const scheduledDate = new Date(startDate);
       scheduledDate.setDate(startDate.getDate() + i);
@@ -91,194 +95,165 @@ export class ContentScheduler {
     return schedule;
   }
 
-  async getScheduledBatches() {
-    const batches = [];
-    
-    for (const [batchId, batch] of this.scheduledBatches) {
-      batches.push({
-        id: batchId,
-        status: batch.status,
-        totalPosts: batch.totalPosts,
-        completedPosts: batch.completedPosts,
-        failedPosts: batch.failedPosts,
-        createdAt: batch.createdAt,
-        nextPostDate: this.getNextPostDate(batch),
-        progress: this.calculateProgress(batch)
+  async getBatchStatus(batchId) {
+    try {
+      const batch = databaseService.getBatchById(batchId);
+      if (!batch) {
+        throw new Error(`Batch ${batchId} not found`);
+      }
+
+      // Get all jobs for this batch
+      const stmt = databaseService.db.prepare(`
+        SELECT * FROM scheduled_jobs 
+        WHERE batch_id = ? 
+        ORDER BY scheduled_time ASC
+      `);
+      
+      const jobs = stmt.all(batchId).map(job => ({
+        ...job,
+        postData: JSON.parse(job.post_data),
+        scheduledTime: new Date(job.scheduled_time)
+      }));
+
+      return {
+        ...batch,
+        jobs: jobs
+      };
+    } catch (error) {
+      logger.error(`❌ Error getting batch status for ${batchId}:`, error);
+      throw error;
+    }
+  }
+
+  async getAllBatches() {
+    try {
+      const batches = databaseService.getAllBatches();
+      
+      // Get job counts for each batch
+      const batchesWithJobs = batches.map(batch => {
+        const stmt = databaseService.db.prepare(`
+          SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending
+          FROM scheduled_jobs 
+          WHERE batch_id = ?
+        `);
+        
+        const jobStats = stmt.get(batch.id);
+        
+        return {
+          ...batch,
+          jobStats: {
+            total: jobStats.total || 0,
+            completed: jobStats.completed || 0,
+            failed: jobStats.failed || 0,
+            pending: jobStats.pending || 0
+          }
+        };
       });
+
+      return batchesWithJobs;
+    } catch (error) {
+      logger.error('❌ Error getting all batches:', error);
+      throw error;
     }
-    
-    return batches.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }
-
-  getNextPostDate(batch) {
-    const now = new Date();
-    const pendingPosts = batch.posts.filter(post => 
-      new Date(post.scheduledDate) > now && post.status === 'scheduled'
-    );
-    
-    if (pendingPosts.length === 0) return null;
-    
-    return pendingPosts[0].scheduledDate;
-  }
-
-  calculateProgress(batch) {
-    const total = batch.totalPosts;
-    const completed = batch.completedPosts;
-    const failed = batch.failedPosts;
-    
-    return {
-      percentage: Math.round((completed / total) * 100),
-      completed,
-      failed,
-      remaining: total - completed - failed
-    };
-  }
-
-  async getBatchDetails(batchId) {
-    const batch = this.scheduledBatches.get(batchId);
-    
-    if (!batch) {
-      throw new Error(`Batch ${batchId} not found`);
-    }
-    
-    return {
-      ...batch,
-      progress: this.calculateProgress(batch),
-      nextPostDate: this.getNextPostDate(batch),
-      posts: batch.posts.map(post => ({
-        ...post,
-        status: this.getPostStatus(post)
-      }))
-    };
-  }
-
-  getPostStatus(post) {
-    const now = new Date();
-    const scheduledDate = new Date(post.scheduledDate);
-    
-    if (post.status === 'published') return 'published';
-    if (post.status === 'failed') return 'failed';
-    if (scheduledDate <= now) return 'overdue';
-    return 'scheduled';
   }
 
   async cancelBatch(batchId) {
-    const batch = this.scheduledBatches.get(batchId);
-    
-    if (!batch) {
-      throw new Error(`Batch ${batchId} not found`);
-    }
-    
-    batch.status = 'cancelled';
-    
-    // Remove from processing queue
-    const queueIndex = this.batchQueue.indexOf(batchId);
-    if (queueIndex > -1) {
-      this.batchQueue.splice(queueIndex, 1);
-    }
-    
-    logger.info(`❌ Cancelled batch ${batchId}`);
-    
-    return {
-      batchId,
-      status: 'cancelled',
-      message: 'Batch cancelled successfully'
-    };
-  }
-
-  async pauseBatch(batchId) {
-    const batch = this.scheduledBatches.get(batchId);
-    
-    if (!batch) {
-      throw new Error(`Batch ${batchId} not found`);
-    }
-    
-    batch.status = 'paused';
-    
-    logger.info(`⏸️ Paused batch ${batchId}`);
-    
-    return {
-      batchId,
-      status: 'paused',
-      message: 'Batch paused successfully'
-    };
-  }
-
-  async resumeBatch(batchId) {
-    const batch = this.scheduledBatches.get(batchId);
-    
-    if (!batch) {
-      throw new Error(`Batch ${batchId} not found`);
-    }
-    
-    batch.status = 'active';
-    
-    // Add back to queue if not already there
-    if (!this.batchQueue.includes(batchId)) {
-      this.batchQueue.push(batchId);
-    }
-    
-    logger.info(`▶️ Resumed batch ${batchId}`);
-    
-    return {
-      batchId,
-      status: 'active',
-      message: 'Batch resumed successfully'
-    };
-  }
-
-  startProcessing() {
-    // In production, this would be a background job
-    // For now, simulate processing
-    setInterval(() => {
-      this.processNextBatch();
-    }, 60000); // Check every minute
-  }
-
-  async processNextBatch() {
-    if (this.batchQueue.length === 0) return;
-    
-    const batchId = this.batchQueue[0];
-    const batch = this.scheduledBatches.get(batchId);
-    
-    if (!batch || batch.status !== 'active') {
-      this.batchQueue.shift(); // Remove from queue
-      return;
-    }
-    
-    const now = new Date();
-    const duePosts = batch.posts.filter(post => 
-      new Date(post.scheduledDate) <= now && post.status === 'scheduled'
-    );
-    
-    if (duePosts.length === 0) return;
-    
-    logger.info(`🚀 Processing ${duePosts.length} due posts from batch ${batchId}`);
-    
-    for (const post of duePosts) {
-      try {
-        await this.publishPost(post, batch);
-        post.status = 'published';
-        batch.completedPosts++;
-        
-        logger.info(`✅ Published post: ${post.title}`);
-        
-      } catch (error) {
-        logger.error(`❌ Failed to publish post: ${post.title}`, error);
-        post.status = 'failed';
-        batch.failedPosts++;
-      }
-    }
-    
-    // Check if batch is complete
-    if (batch.completedPosts + batch.failedPosts === batch.totalPosts) {
-      batch.status = 'completed';
-      this.batchQueue.shift(); // Remove from queue
+    try {
+      // Update batch status
+      const stmt = databaseService.db.prepare(`
+        UPDATE batches 
+        SET status = 'cancelled', updated_at = datetime('now')
+        WHERE id = ?
+      `);
       
-      logger.info(`🎉 Batch ${batchId} completed`);
+      const result = stmt.run(batchId);
+      
+      if (result.changes === 0) {
+        throw new Error(`Batch ${batchId} not found`);
+      }
+
+      // Cancel all pending jobs for this batch
+      const cancelJobsStmt = databaseService.db.prepare(`
+        UPDATE scheduled_jobs 
+        SET status = 'cancelled', updated_at = datetime('now')
+        WHERE batch_id = ? AND status = 'pending'
+      `);
+      
+      cancelJobsStmt.run(batchId);
+
+      logger.info(`✅ Batch ${batchId} cancelled successfully`);
+      return { success: true, message: 'Batch cancelled successfully' };
+    } catch (error) {
+      logger.error(`❌ Error cancelling batch ${batchId}:`, error);
+      throw error;
     }
   }
 
+  async rescheduleJob(jobId, newScheduledTime) {
+    try {
+      const job = databaseService.getJobById(jobId);
+      if (!job) {
+        throw new Error(`Job ${jobId} not found`);
+      }
+
+      if (job.status !== 'pending') {
+        throw new Error(`Cannot reschedule job with status: ${job.status}`);
+      }
+
+      const newDate = new Date(newScheduledTime);
+      
+      // Update job scheduled time
+      const stmt = databaseService.db.prepare(`
+        UPDATE scheduled_jobs 
+        SET scheduled_time = ?, updated_at = datetime('now')
+        WHERE id = ?
+      `);
+      
+      stmt.run(newDate.toISOString(), jobId);
+
+      logger.info(`✅ Job ${jobId} rescheduled to ${newScheduledTime}`);
+      return { success: true, message: 'Job rescheduled successfully' };
+    } catch (error) {
+      logger.error(`❌ Error rescheduling job ${jobId}:`, error);
+      throw error;
+    }
+  }
+
+  async getScheduledJobs(limit = 50) {
+    try {
+      const stmt = databaseService.db.prepare(`
+        SELECT * FROM scheduled_jobs 
+        ORDER BY scheduled_time ASC 
+        LIMIT ?
+      `);
+      
+      const jobs = stmt.all(limit).map(job => ({
+        ...job,
+        postData: JSON.parse(job.post_data),
+        scheduledTime: new Date(job.scheduled_time)
+      }));
+
+      return jobs;
+    } catch (error) {
+      logger.error('❌ Error getting scheduled jobs:', error);
+      throw error;
+    }
+  }
+
+  async getJobById(jobId) {
+    try {
+      return databaseService.getJobById(jobId);
+    } catch (error) {
+      logger.error(`❌ Error getting job ${jobId}:`, error);
+      throw error;
+    }
+  }
+
+  // Legacy method for backward compatibility
   async publishPost(post, batch) {
     try {
       logger.info(`📤 Publishing post to LinkedIn: ${post.title}`);
@@ -297,61 +272,15 @@ export class ContentScheduler {
       };
     } catch (error) {
       logger.error(`❌ Failed to publish post to LinkedIn: ${post.title}`, error);
-      throw new Error(`LinkedIn publishing failed: ${error.message}`);
-    }
-  }
-
-  // Analytics methods
-  getBatchAnalytics() {
-    const analytics = {
-      totalBatches: this.scheduledBatches.size,
-      activeBatches: 0,
-      completedBatches: 0,
-      failedBatches: 0,
-      totalPosts: 0,
-      publishedPosts: 0,
-      failedPosts: 0,
-      averageViralScore: 0
-    };
-    
-    let totalViralScore = 0;
-    let postCount = 0;
-    
-    for (const batch of this.scheduledBatches.values()) {
-      if (batch.status === 'active') analytics.activeBatches++;
-      if (batch.status === 'completed') analytics.completedBatches++;
-      if (batch.status === 'failed') analytics.failedBatches++;
       
-      analytics.totalPosts += batch.totalPosts;
-      analytics.publishedPosts += batch.completedPosts;
-      analytics.failedPosts += batch.failedPosts;
-      
-      batch.posts.forEach(post => {
-        totalViralScore += post.viralScore || 0;
-        postCount++;
-      });
+      return {
+        success: false,
+        postId: post.postId,
+        error: error.message,
+        publishedAt: new Date()
+      };
     }
-    
-    analytics.averageViralScore = postCount > 0 ? totalViralScore / postCount : 0;
-    
-    return analytics;
   }
+}
 
-  // Cleanup old batches
-  cleanupOldBatches(daysToKeep = 30) {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-    
-    let cleanedCount = 0;
-    
-    for (const [batchId, batch] of this.scheduledBatches) {
-      if (batch.status === 'completed' && new Date(batch.createdAt) < cutoffDate) {
-        this.scheduledBatches.delete(batchId);
-        cleanedCount++;
-      }
-    }
-    
-    logger.info(`🧹 Cleaned up ${cleanedCount} old batches`);
-    return cleanedCount;
-  }
-} 
+export default new ContentScheduler(); 
