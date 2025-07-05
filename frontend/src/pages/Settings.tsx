@@ -4,10 +4,11 @@ import {
   LinkIcon, 
   ClockIcon, 
   CheckIcon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { linkedInApi, settingsApi } from '../services/api';
-import type { AppSettings, PostTopic } from '../types';
+import type { AppSettings, PostTopic, LinkedInAuthResponse } from '../types';
 
 const Settings = () => {
   const [searchParams] = useSearchParams();
@@ -24,6 +25,9 @@ const Settings = () => {
     type: 'success' | 'error' | null;
     message: string;
   }>({ type: null, message: '' });
+  const [linkedInProfile, setLinkedInProfile] = useState<LinkedInAuthResponse['profile'] | undefined>(undefined);
+  const [linkedInConnected, setLinkedInConnected] = useState(false);
+  const [isRefreshingStatus, setIsRefreshingStatus] = useState(false);
 
   const topics = [
     { value: 'fullstack', label: 'Full Stack Development' },
@@ -44,7 +48,20 @@ const Settings = () => {
       }
     };
 
+          const fetchLinkedInStatus = async () => {
+        try {
+          const status = await linkedInApi.getStatus();
+          setLinkedInConnected(status.connected);
+          setLinkedInProfile(status.profile || undefined);
+        } catch (error) {
+          console.error('Failed to fetch LinkedIn status:', error);
+          setLinkedInConnected(false);
+          setLinkedInProfile(undefined);
+        }
+      };
+
     fetchSettings();
+    fetchLinkedInStatus();
   }, []);
 
   // Handle LinkedIn callback status
@@ -54,8 +71,11 @@ const Settings = () => {
     
     if (linkedinParam === 'success') {
       setLinkedInStatus({ type: 'success', message: 'LinkedIn connected successfully!' });
-      // Refresh settings to show connected status
-      settingsApi.get().then(setSettings).catch(console.error);
+      // Refresh LinkedIn status to show connected status
+      linkedInApi.getStatus().then(status => {
+        setLinkedInConnected(status.connected);
+        setLinkedInProfile(status.profile || undefined);
+      }).catch(console.error);
     } else if (linkedinParam === 'error') {
       setLinkedInStatus({ type: 'error', message: messageParam || 'LinkedIn connection failed' });
     }
@@ -76,9 +96,23 @@ const Settings = () => {
   const handleLinkedInDisconnect = async () => {
     try {
       await linkedInApi.disconnect();
-      setSettings(prev => ({ ...prev, linkedInConnected: false }));
+      setLinkedInConnected(false);
+      setLinkedInProfile(undefined);
     } catch (error) {
       console.error('Failed to disconnect LinkedIn:', error);
+    }
+  };
+
+  const handleRefreshLinkedInStatus = async () => {
+    setIsRefreshingStatus(true);
+    try {
+      const status = await linkedInApi.getStatus();
+      setLinkedInConnected(status.connected);
+      setLinkedInProfile(status.profile || undefined);
+    } catch (error) {
+      console.error('Failed to refresh LinkedIn status:', error);
+    } finally {
+      setIsRefreshingStatus(false);
     }
   };
 
@@ -144,41 +178,54 @@ const Settings = () => {
         
         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center space-x-3">
-            {settings.linkedInConnected ? (
+            {linkedInConnected ? (
               <CheckIcon className="w-6 h-6 text-green-500" />
             ) : (
               <XMarkIcon className="w-6 h-6 text-red-500" />
             )}
             <div>
               <p className="font-medium text-gray-900">
-                {settings.linkedInConnected ? 'Connected to LinkedIn' : 'Not connected'}
+                {linkedInConnected ? 'Connected to LinkedIn' : 'Not connected'}
               </p>
               <p className="text-sm text-gray-600">
-                {settings.linkedInConnected 
-                  ? 'Your account is connected and ready to post'
+                {linkedInConnected 
+                  ? linkedInProfile 
+                    ? `Connected as ${linkedInProfile.firstName} ${linkedInProfile.lastName}`
+                    : 'Your account is connected and ready to post'
                   : 'Connect your LinkedIn account to start posting'
                 }
               </p>
             </div>
           </div>
           
-          {settings.linkedInConnected ? (
+          <div className="flex items-center space-x-2">
             <button
-              onClick={handleLinkedInDisconnect}
-              className="btn-secondary"
+              onClick={handleRefreshLinkedInStatus}
+              disabled={isRefreshingStatus}
+              className="btn-secondary flex items-center space-x-2"
             >
-              Disconnect
+              <ArrowPathIcon className={`w-4 h-4 ${isRefreshingStatus ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
             </button>
-          ) : (
-            <button
-              onClick={handleLinkedInConnect}
-              disabled={isConnecting}
-              className="btn-primary flex items-center space-x-2"
-            >
-              <LinkIcon className="w-4 h-4" />
-              <span>{isConnecting ? 'Connecting...' : 'Connect LinkedIn'}</span>
-            </button>
-          )}
+            
+            {linkedInConnected ? (
+              <button
+                onClick={handleLinkedInDisconnect}
+                className="btn-secondary"
+              >
+                Disconnect
+              </button>
+            ) : (
+              <button
+                onClick={handleLinkedInConnect}
+                disabled={isConnecting}
+                className="btn-primary flex items-center space-x-2"
+              >
+                <LinkIcon className="w-4 h-4" />
+                <span>{isConnecting ? 'Connecting...' : 'Connect LinkedIn'}</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

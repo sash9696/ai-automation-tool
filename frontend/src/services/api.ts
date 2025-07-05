@@ -114,11 +114,11 @@ export const linkedInApi = {
         };
       } catch (error) {
         console.error('Failed to fetch profile:', error);
-        return { connected: true, profile: null };
+        return { connected: true, profile: undefined };
       }
     }
     
-    return { connected: false, profile: null };
+    return { connected: false, profile: undefined };
   },
 
   // Disconnect LinkedIn
