@@ -24,6 +24,7 @@ const PostGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPost, setGeneratedPost] = useState<Post | null>(null);
   const [scheduledTime, setScheduledTime] = useState('');
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('09:00');
   const [isScheduling, setIsScheduling] = useState(false);
   
   // Template system state
@@ -42,6 +43,22 @@ const PostGenerator = () => {
     { value: 'dsa', label: 'Data Structures & Algorithms', emoji: '🧮' },
     { value: 'interview', label: 'Interview Preparation', emoji: '🎯' },
     { value: 'placement', label: 'College Placements', emoji: '🎓' },
+  ];
+
+  const timeSlots = [
+    { value: '07:00', label: '7:00 AM', description: 'Early morning engagement' },
+    { value: '08:00', label: '8:00 AM', description: 'Morning commute time' },
+    { value: '09:00', label: '9:00 AM', description: 'Work start time (Recommended)' },
+    { value: '10:00', label: '10:00 AM', description: 'Mid-morning break' },
+    { value: '11:00', label: '11:00 AM', description: 'Late morning' },
+    { value: '12:00', label: '12:00 PM', description: 'Lunch break' },
+    { value: '13:00', label: '1:00 PM', description: 'Early afternoon' },
+    { value: '14:00', label: '2:00 PM', description: 'Mid-afternoon' },
+    { value: '15:00', label: '3:00 PM', description: 'Late afternoon' },
+    { value: '16:00', label: '4:00 PM', description: 'End of workday' },
+    { value: '16:15', label: '4:15 PM', description: 'Late afternoon peak' },
+    { value: '17:00', label: '5:00 PM', description: 'Evening commute' },
+    { value: '18:00', label: '6:00 PM', description: 'Evening time' }
   ];
 
   const tones = [
@@ -115,12 +132,17 @@ const PostGenerator = () => {
     }
   };
 
+  const createScheduledDateTime = (timeSlot: string, date: string) => {
+    const scheduledDate = new Date(date + 'T' + timeSlot);
+    return scheduledDate;
+  };
+
   const handleSchedule = async () => {
     if (!generatedPost || !scheduledTime) return;
     
     setIsScheduling(true);
     try {
-      const scheduledDate = new Date(scheduledTime);
+      const scheduledDate = createScheduledDateTime(selectedTimeSlot, scheduledTime);
       await postsApi.schedule({
         postId: generatedPost.id,
         scheduledTime: scheduledDate,
@@ -129,6 +151,7 @@ const PostGenerator = () => {
       // Reset form
       setGeneratedPost(null);
       setScheduledTime('');
+      setSelectedTimeSlot('09:00');
       // In a real app, show success notification and redirect
     } catch (error) {
       console.error('Failed to schedule post:', error);
@@ -407,17 +430,62 @@ const PostGenerator = () => {
               </div>
 
               {/* Scheduling */}
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Schedule Post
-                </label>
-                <input
-                  type="datetime-local"
-                  value={scheduledTime}
-                  onChange={(e) => setScheduledTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min={new Date().toISOString().slice(0, 16)}
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Schedule Date
+                  </label>
+                  <input
+                    type="date"
+                    value={scheduledTime ? scheduledTime.split('T')[0] : ''}
+                    onChange={(e) => {
+                      const date = e.target.value;
+                      if (date) {
+                        setScheduledTime(date + 'T' + selectedTimeSlot);
+                      } else {
+                        setScheduledTime('');
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Schedule Time
+                  </label>
+                  <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+                    {timeSlots.map((timeSlot) => (
+                      <label key={timeSlot.value} className="relative flex items-start">
+                        <input
+                          type="radio"
+                          name="scheduleTime"
+                          value={timeSlot.value}
+                          checked={selectedTimeSlot === timeSlot.value}
+                          onChange={(e) => {
+                            setSelectedTimeSlot(e.target.value);
+                            if (scheduledTime && scheduledTime.includes('T')) {
+                              setScheduledTime(scheduledTime.split('T')[0] + 'T' + e.target.value);
+                            }
+                          }}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <div className="ml-2 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-900">{timeSlot.label}</span>
+                            {timeSlot.value === '09:00' && (
+                              <span className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded-full">
+                                Best
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500">{timeSlot.description}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Action Buttons */}

@@ -119,7 +119,7 @@ class DatabaseService {
     const stmt = this.db.prepare(`
       SELECT * FROM scheduled_jobs 
       WHERE status = 'pending' 
-      AND scheduled_time <= datetime('now')
+      AND datetime(scheduled_time) <= datetime('now')
       ORDER BY scheduled_time ASC
     `);
 

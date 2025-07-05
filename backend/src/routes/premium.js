@@ -10,6 +10,8 @@ import {
   getWorkerStatus
 } from '../controllers/premiumController.js';
 import { validatePremiumRequest, validateScheduleBatch } from '../middleware/validation.js';
+import backgroundWorker from '../services/backgroundWorker.js';
+import databaseService from '../services/databaseService.js';
 
 const router = express.Router();
 
@@ -36,5 +38,44 @@ router.get('/analytics', getAnalytics);
 
 // Get worker status
 router.get('/worker/status', getWorkerStatus);
+
+// Debug: Manually process due jobs
+router.post('/debug/process-jobs', (req, res) => {
+  try {
+    backgroundWorker.processDueJobs();
+    res.json({ success: true, message: 'Processing due jobs...' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Debug: Check database directly
+router.get('/debug/due-jobs', (req, res) => {
+  try {
+    const now = new Date().toISOString();
+    
+    // Get all pending jobs
+    const stmt = databaseService.db.prepare(`
+      SELECT id, scheduled_time, status, 
+             datetime('now') as current_time,
+             scheduled_time <= datetime('now') as is_due
+      FROM scheduled_jobs 
+      WHERE status = 'pending'
+      ORDER BY scheduled_time ASC
+    `);
+    
+    const jobs = stmt.all();
+    
+    res.json({
+      success: true,
+      data: {
+        currentTime: now,
+        jobs: jobs
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 export default router; 

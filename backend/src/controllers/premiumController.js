@@ -77,7 +77,7 @@ export const scheduleBatch = async (req, res) => {
       });
     }
 
-    const { posts, scheduleTime = '09:00' } = req.body;
+    const { posts, scheduleTime = '09:00', timezone = 'UTC' } = req.body;
 
     if (!posts || !Array.isArray(posts) || posts.length === 0) {
       return res.status(400).json({
@@ -86,10 +86,10 @@ export const scheduleBatch = async (req, res) => {
       });
     }
 
-    logger.info(`📅 Scheduling batch with ${posts.length} posts for ${scheduleTime}`);
+    logger.info(`📅 Scheduling batch with ${posts.length} posts for ${scheduleTime} in timezone ${timezone}`);
 
     // Schedule the batch
-    const batch = await contentScheduler.scheduleBatch(posts, scheduleTime);
+    const batch = await contentScheduler.scheduleBatch(posts, scheduleTime, timezone);
 
     logger.info(`✅ Batch ${batch.id} scheduled successfully`);
 

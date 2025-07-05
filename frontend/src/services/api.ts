@@ -212,7 +212,7 @@ export const premiumApi = {
   },
 
   // Schedule batch
-  scheduleBatch: async (data: { posts: ViralPost[], scheduleTime?: string }): Promise<ApiResponse<{ batchId: string, totalPosts: number, scheduleTime: string, status: string, message: string, createdAt: string }>> => {
+  scheduleBatch: async (data: { posts: ViralPost[], scheduleTime?: string, timezone?: string }): Promise<ApiResponse<{ batchId: string, totalPosts: number, scheduleTime: string, status: string, message: string, createdAt: string }>> => {
     const response = await fetch(`${API_BASE_URL}/premium/schedule-batch`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -224,7 +224,41 @@ export const premiumApi = {
   // Get all batches
   getBatches: async (): Promise<ApiResponse<{ batches: ScheduledBatch[], totalBatches: number }>> => {
     const response = await fetch(`${API_BASE_URL}/premium/batches`);
-    return response.json();
+    const data = await response.json();
+    
+    // Transform snake_case to camelCase
+    if (data.success && data.data?.batches) {
+      data.data.batches = data.data.batches.map((batch: {
+        id: string;
+        status: string;
+        total_posts?: number;
+        completed_posts?: number;
+        failed_posts?: number;
+        created_at: string;
+        next_post_date?: string;
+        jobStats?: {
+          total: number;
+          completed: number;
+          failed: number;
+        };
+      }) => ({
+        id: batch.id,
+        status: batch.status as 'active' | 'paused' | 'completed' | 'cancelled',
+        totalPosts: batch.total_posts || 0,
+        completedPosts: batch.completed_posts || 0,
+        failedPosts: batch.failed_posts || 0,
+        createdAt: batch.created_at,
+        nextPostDate: batch.next_post_date,
+        progress: {
+          percentage: batch.jobStats ? Math.round(((batch.jobStats.completed || 0) / (batch.jobStats.total || 1)) * 100) : 0,
+          completed: batch.jobStats?.completed || 0,
+          failed: batch.jobStats?.failed || 0,
+          remaining: (batch.jobStats?.total || 0) - (batch.jobStats?.completed || 0) - (batch.jobStats?.failed || 0)
+        }
+      }));
+    }
+    
+    return data;
   },
 
   // Get batch details

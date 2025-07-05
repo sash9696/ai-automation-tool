@@ -7,14 +7,14 @@ class ContentScheduler {
     this.batchCounter = 0;
   }
 
-  async scheduleBatch(posts, scheduleTime = '09:00') {
+  async scheduleBatch(posts, scheduleTime = '09:00', timezone = 'UTC') {
     try {
       logger.info(`📅 Scheduling batch with ${posts.length} posts:`, JSON.stringify(posts, null, 2));
       
       const batchId = `batch_${Date.now()}_${++this.batchCounter}`;
       
       // Calculate 7-day schedule starting from tomorrow
-      const schedule = this.calculateSchedule(scheduleTime);
+      const schedule = this.calculateSchedule(scheduleTime, timezone);
       
       // Create batch record
       databaseService.createBatch({
@@ -76,14 +76,31 @@ class ContentScheduler {
     }
   }
 
-  calculateSchedule(scheduleTime) {
+  calculateSchedule(scheduleTime, timezone = 'UTC') {
     const schedule = [];
     const [hours, minutes] = scheduleTime.split(':').map(Number);
     
-    // Start from tomorrow
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() + 1);
-    startDate.setHours(hours, minutes, 0, 0);
+    // Get current date in user's timezone
+    const now = new Date();
+    const userDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+    
+    // Create the requested time for today
+    const todayRequestedTime = new Date(userDate);
+    todayRequestedTime.setHours(hours, minutes, 0, 0);
+    
+    // Check if the requested time for today is still in the future
+    const nowInUserTimezone = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+    
+    let startDate;
+    if (todayRequestedTime > nowInUserTimezone) {
+      // If requested time is still in the future today, start from today
+      startDate = new Date(todayRequestedTime);
+    } else {
+      // Otherwise, start from tomorrow
+      startDate = new Date(userDate);
+      startDate.setDate(startDate.getDate() + 1);
+      startDate.setHours(hours, minutes, 0, 0);
+    }
     
     // Generate 7-day schedule
     for (let i = 0; i < 7; i++) {

@@ -28,6 +28,7 @@ const Premium = () => {
   const [analytics, setAnalytics] = useState<PremiumAnalytics | null>(null);
   const [selectedDomains, setSelectedDomains] = useState<string[]>(['technology', 'frontend', 'ai']);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('viral');
+  const [selectedTime, setSelectedTime] = useState<string>('09:00');
   const [isLoading, setIsLoading] = useState(true);
 
   const domains = [
@@ -42,6 +43,22 @@ const Premium = () => {
     { value: 'educational', label: 'Educational Value', score: 92, description: 'Problem-solution format with resources' },
     { value: 'story', label: 'Story-Driven', score: 88, description: 'Personal narratives with lessons learned' },
     { value: 'listicle', label: 'Listicle', score: 85, description: 'Numbered lists for easy consumption' }
+  ];
+
+  const timeSlots = [
+    { value: '07:00', label: '7:00 AM', description: 'Early morning engagement' },
+    { value: '08:00', label: '8:00 AM', description: 'Morning commute time' },
+    { value: '09:00', label: '9:00 AM', description: 'Work start time (Recommended)' },
+    { value: '10:00', label: '10:00 AM', description: 'Mid-morning break' },
+    { value: '11:00', label: '11:00 AM', description: 'Late morning' },
+    { value: '12:00', label: '12:00 PM', description: 'Lunch break' },
+    { value: '13:00', label: '1:00 PM', description: 'Early afternoon' },
+    { value: '14:00', label: '2:00 PM', description: 'Mid-afternoon' },
+    { value: '15:00', label: '3:00 PM', description: 'Late afternoon' },
+    { value: '16:00', label: '4:00 PM', description: 'End of workday' },
+    { value: '16:15', label: '4:15 PM', description: 'Late afternoon peak' },
+    { value: '17:00', label: '5:00 PM', description: 'Evening commute' },
+    { value: '18:00', label: '6:00 PM', description: 'Evening time' }
   ];
 
   useEffect(() => {
@@ -87,7 +104,8 @@ const Premium = () => {
     try {
       await premiumApi.scheduleBatch({
         posts: generatedPosts,
-        scheduleTime: '09:00'
+        scheduleTime: selectedTime,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
       
       // Refresh the batches list
@@ -296,6 +314,36 @@ const Premium = () => {
             </div>
           </div>
 
+          {/* Time Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Schedule Time</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {timeSlots.map((timeSlot) => (
+                <label key={timeSlot.value} className="relative flex items-start">
+                  <input
+                    type="radio"
+                    name="scheduleTime"
+                    value={timeSlot.value}
+                    checked={selectedTime === timeSlot.value}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <div className="ml-3 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-900">{timeSlot.label}</span>
+                      {timeSlot.value === '09:00' && (
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          Recommended
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{timeSlot.description}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* Generate Button */}
           <div className="flex items-center space-x-4">
             <button
@@ -350,7 +398,7 @@ const Premium = () => {
                       {post.viralScore}% viral
                     </span>
                   </div>
-                  <span className="text-sm text-gray-500">9:00 AM</span>
+                  <span className="text-sm text-gray-500">{timeSlots.find(t => t.value === selectedTime)?.label || selectedTime}</span>
                 </div>
                 
                 <h4 className="font-medium text-gray-900 mb-2">{post.title}</h4>
@@ -416,7 +464,7 @@ const Premium = () => {
                         {batch.status}
                       </span>
                       <span className="text-sm text-gray-600">
-                        {new Date(batch.createdAt).toLocaleDateString()}
+                        {batch.createdAt ? new Date(batch.createdAt.replace(' ', 'T')).toLocaleDateString() : 'Today'}
                       </span>
                     </div>
                     
@@ -471,7 +519,7 @@ const Premium = () => {
                   {batch.nextPostDate && (
                     <div className="mt-3 text-sm text-gray-600">
                       <Clock className="w-4 h-4 inline mr-1" />
-                      Next post: {batch.nextPostDate ? new Date(batch.nextPostDate).toLocaleString() : 'N/A'}
+                      Next post: {batch.nextPostDate ? new Date(batch.nextPostDate.replace(' ', 'T')).toLocaleString() : 'N/A'}
                     </div>
                   )}
                 </div>

@@ -41,10 +41,17 @@ const scheduleBatchSchema = Joi.object({
           name: Joi.string().required(),
           url: Joi.string().uri().required()
         })
-      ).required()
-    })
+      ).required(),
+      aiInsights: Joi.string().optional(),
+      content: Joi.string().optional(),
+      postId: Joi.string().optional(),
+      status: Joi.string().optional(),
+      createdAt: Joi.date().optional(),
+      updatedAt: Joi.date().optional()
+    }).unknown(true) // Allow additional fields
   ).min(1).max(7).required(),
-  scheduleTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional().default('09:00')
+  scheduleTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional().default('09:00'),
+  timezone: Joi.string().optional().default('UTC')
 });
 
 // Validation middleware

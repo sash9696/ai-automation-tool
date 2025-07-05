@@ -48,34 +48,35 @@ class BackgroundWorker {
 
   async processDueJobs() {
     try {
+      const nowUtc = new Date().toISOString();
+      logger.info(`[DEBUG] processDueJobs: Current UTC time: ${nowUtc}`);
       const dueJobs = databaseService.getDueJobs();
-      
+      logger.info(`[DEBUG] processDueJobs: Found ${dueJobs.length} due jobs`);
+      dueJobs.forEach(job => {
+        logger.info(`[DEBUG] Due job: id=${job.id}, scheduledTime=${job.scheduledTime.toISOString()}, status=${job.status}`);
+      });
       if (dueJobs.length === 0) {
         logger.debug('⏰ No due jobs found');
         return;
       }
-
       logger.info(`📅 Processing ${dueJobs.length} due job(s)`);
-
       for (const job of dueJobs) {
         await this.processJob(job);
       }
-
     } catch (error) {
-      logger.error('❌ Error processing due jobs:', error);
+      logger.error('[DEBUG] ❌ Error processing due jobs:', error);
     }
   }
 
   async processJob(job) {
     try {
-      logger.info(`📤 Processing job ${job.id}: ${job.postData.title || 'Untitled Post'}`);
-
+      logger.info(`[DEBUG] processJob: Processing job ${job.id}: ${job.postData.title || 'Untitled Post'} at ${new Date().toISOString()}`);
       // Update job status to processing
       databaseService.updateJobStatus(job.id, 'processing');
-
+      logger.info(`[DEBUG] processJob: Job ${job.id} status set to processing`);
       // Publish to LinkedIn
       const result = await publishToLinkedIn(job.postData.formattedContent || job.postData.content);
-
+      logger.info(`[DEBUG] processJob: Job ${job.id} publishToLinkedIn result: ${JSON.stringify(result)}`);
       // Update job status to completed
       databaseService.updateJobStatus(
         job.id, 
@@ -83,18 +84,14 @@ class BackgroundWorker {
         result.postId,
         result.postUrn
       );
-
+      logger.info(`[DEBUG] processJob: Job ${job.id} status set to completed`);
       // Update batch progress
       databaseService.updateBatchProgress(job.batch_id, 1, 0);
-
-      logger.info(`✅ Job ${job.id} completed successfully: ${result.postUrn}`);
-
+      logger.info(`[DEBUG] processJob: Job ${job.id} batch progress updated`);
       // Record analytics
       this.recordJobAnalytics(job, true);
-
     } catch (error) {
-      logger.error(`❌ Job ${job.id} failed:`, error);
-
+      logger.error(`[DEBUG] ❌ Job ${job.id} failed:`, error);
       // Update job status to failed
       databaseService.updateJobStatus(
         job.id, 
@@ -103,10 +100,8 @@ class BackgroundWorker {
         null,
         error.message
       );
-
       // Update batch progress
       databaseService.updateBatchProgress(job.batch_id, 0, 1);
-
       // Record analytics
       this.recordJobAnalytics(job, false);
     }
