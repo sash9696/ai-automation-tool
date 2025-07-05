@@ -79,6 +79,19 @@ class DatabaseService {
       )
     `);
 
+    // LinkedIn sessions table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS linkedin_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        access_token TEXT NOT NULL,
+        refresh_token TEXT,
+        expires_at TEXT NOT NULL,
+        user_profile TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     console.log('📋 Database tables created successfully');
   }
 
@@ -226,6 +239,71 @@ class DatabaseService {
       completed: completedJobs.count,
       failed: failedJobs.count
     };
+  }
+
+  // LinkedIn session management methods
+  saveLinkedInSession(sessionData) {
+    // Clear any existing sessions first (we only support one session)
+    this.db.prepare('DELETE FROM linkedin_sessions').run();
+    
+    const stmt = this.db.prepare(`
+      INSERT INTO linkedin_sessions (
+        access_token, refresh_token, expires_at, user_profile
+      ) VALUES (?, ?, ?, ?)
+    `);
+
+    return stmt.run(
+      sessionData.accessToken,
+      sessionData.refreshToken || null,
+      sessionData.expiresAt.toISOString(),
+      sessionData.userProfile ? JSON.stringify(sessionData.userProfile) : null
+    );
+  }
+
+  getLinkedInSession() {
+    const stmt = this.db.prepare('SELECT * FROM linkedin_sessions ORDER BY created_at DESC LIMIT 1');
+    const session = stmt.get();
+    
+    if (session) {
+      return {
+        ...session,
+        userProfile: session.user_profile ? JSON.parse(session.user_profile) : null,
+        expiresAt: new Date(session.expires_at)
+      };
+    }
+    
+    return null;
+  }
+
+  updateLinkedInSession(sessionData) {
+    const stmt = this.db.prepare(`
+      UPDATE linkedin_sessions 
+      SET access_token = ?,
+          refresh_token = ?,
+          expires_at = ?,
+          user_profile = ?,
+          updated_at = datetime('now')
+      WHERE id = (SELECT id FROM linkedin_sessions ORDER BY created_at DESC LIMIT 1)
+    `);
+
+    return stmt.run(
+      sessionData.accessToken,
+      sessionData.refreshToken || null,
+      sessionData.expiresAt.toISOString(),
+      sessionData.userProfile ? JSON.stringify(sessionData.userProfile) : null
+    );
+  }
+
+  clearLinkedInSession() {
+    return this.db.prepare('DELETE FROM linkedin_sessions').run();
+  }
+
+  isLinkedInSessionValid() {
+    const session = this.getLinkedInSession();
+    if (!session) return false;
+    
+    // Check if token is expired
+    return new Date(session.expiresAt) > new Date();
   }
 
   close() {
