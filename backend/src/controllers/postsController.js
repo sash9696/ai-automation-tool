@@ -62,14 +62,22 @@ const updateMockPost = (id, updates) => {
 // Controller functions
 export const generatePostContent = async (req, res, next) => {
   try {
-    const { topic, tone, vibe = 'Story' } = req.body;
+    const { topic, tone, vibe = 'Story', prompt, useCustomPrompt, includeHashtags, includeCTA } = req.body;
 
     if (!topic) {
       return res.status(400).json({ error: 'Topic is required' });
     }
 
-    // Generate post using AI service
-    const generatedContent = await generateAIPost({ topic, tone, vibe });
+    // Generate post using AI service with all parameters
+    const generatedContent = await generateAIPost({ 
+      topic, 
+      tone, 
+      vibe, 
+      prompt, 
+      useCustomPrompt, 
+      includeHashtags, 
+      includeCTA 
+    });
 
     // Score the generated post using LinkedIn algorithm
     const ranking = rankLinkedInPost(generatedContent, false);

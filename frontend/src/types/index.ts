@@ -28,6 +28,10 @@ export interface GeneratePostRequest {
   tone?: PostTone;
   includeHashtags?: boolean;
   includeCTA?: boolean;
+  prompt?: string; // Custom prompt from frontend template system
+  useCustomPrompt?: boolean; // Flag to indicate custom prompt usage
+  selectedCategory?: string; // Selected template category from UI
+  selectedStyle?: string; // Selected template style from UI
 }
 
 export interface SchedulePostRequest {

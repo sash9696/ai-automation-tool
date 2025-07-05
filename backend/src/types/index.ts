@@ -27,6 +27,8 @@ export interface GeneratePostRequest {
   tone?: 'professional' | 'casual' | 'motivational';
   includeHashtags?: boolean;
   includeCTA?: boolean;
+  prompt?: string; // Custom prompt from frontend template system
+  useCustomPrompt?: boolean; // Flag to indicate custom prompt usage
 }
 
 export interface SchedulePostRequest {

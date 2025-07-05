@@ -8,6 +8,10 @@ const generatePostSchema = Joi.object({
   tone: Joi.string().valid('professional', 'casual', 'motivational').optional(),
   includeHashtags: Joi.boolean().optional(),
   includeCTA: Joi.boolean().optional(),
+  prompt: Joi.string().optional(),
+  useCustomPrompt: Joi.boolean().optional(),
+  selectedCategory: Joi.string().optional(),
+  selectedStyle: Joi.string().optional()
 });
 
 const schedulePostSchema = Joi.object({

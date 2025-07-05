@@ -28,8 +28,35 @@ const tonePrompts = {
 
 export const generateAIPost = async (request: GeneratePostRequest): Promise<string> => {
   try {
-    // For testing, always use mock data instead of OpenAI API
-    console.log('🤖 Using mock AI post generation for testing');
+    if (request.useCustomPrompt && request.prompt) {
+      console.log('🟢 [AIService] Using custom prompt!');
+      console.log('📝 [AIService] Prompt sent to OpenAI:', request.prompt.slice(0, 300));
+      // Use the custom prompt with OpenAI
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a senior software engineer with 10+ years of experience creating viral LinkedIn content. Write authentic, engaging posts that sound like real experience. You must follow the user\'s instructions exactly.',
+          },
+          {
+            role: 'user',
+            content: request.prompt,
+          },
+        ],
+        max_tokens: 800,
+        temperature: 0.8,
+      });
+
+      const content = completion.choices[0]?.message?.content;
+      console.log('🟢 [AIService] Raw OpenAI response:', content ? content.slice(0, 300) : '[No content]');
+      if (!content) {
+        throw new Error('Failed to generate content with custom prompt');
+      }
+      return content.trim();
+    }
+    // Fallback to mock data for testing
+    console.log('🟡 [AIService] Not using custom prompt. Fallback to mock AI post generation. Request:', JSON.stringify(request));
     
     // Get mock post for the topic, or generate a generic one
     const mockPost = mockPosts[request.topic] || `🚀 ${request.topic}: Exploring the latest trends and insights in ${request.topic}. 

@@ -3,10 +3,18 @@ import {
   Sparkles, 
   Clock, 
   Send,
-  FileText
+  FileText,
+  RefreshCw,
+  Copy,
+  Check,
+  Brain,
+  TrendingUp
 } from 'lucide-react';
 import { postsApi } from '../services/api';
+import { postGenerator, analyzePost } from '../services/postGenerator';
+import { TEMPLATE_CATEGORIES, TEMPLATE_STYLES } from '../constants/postTemplates';
 import type { Post, PostTopic, GeneratePostRequest } from '../types';
+import type { TemplateCategory, TemplateStyle } from '../constants/postTemplates';
 
 const PostGenerator = () => {
   const [topic, setTopic] = useState<PostTopic>('fullstack');
@@ -17,6 +25,17 @@ const PostGenerator = () => {
   const [generatedPost, setGeneratedPost] = useState<Post | null>(null);
   const [scheduledTime, setScheduledTime] = useState('');
   const [isScheduling, setIsScheduling] = useState(false);
+  
+  // Template system state
+  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory>('frontend');
+  const [selectedStyle, setSelectedStyle] = useState<TemplateStyle>('story');
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [postAnalysis, setPostAnalysis] = useState<{
+    readabilityScore: number;
+    engagementPotential: number;
+    suggestions: string[];
+  } | null>(null);
 
   const topics = [
     { value: 'fullstack', label: 'Full Stack Development', emoji: '💻' },
@@ -39,15 +58,60 @@ const PostGenerator = () => {
         tone,
         includeHashtags,
         includeCTA,
+        selectedCategory,
+        selectedStyle,
       };
       
-      const post = await postsApi.generate(request);
+      // Use the new template-based post generator
+      const post = await postGenerator.generatePost(request);
       setGeneratedPost(post);
+      
+      // Analyze the generated post
+      const analysis = analyzePost(post);
+      setPostAnalysis(analysis);
     } catch (error) {
       console.error('Failed to generate post:', error);
       // In a real app, show a toast notification
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleRegenerate = async () => {
+    setIsGenerating(true);
+    try {
+      const request: GeneratePostRequest = {
+        topic,
+        tone,
+        includeHashtags,
+        includeCTA,
+        selectedCategory,
+        selectedStyle,
+      };
+      
+      // Regenerate with different template
+      const post = await postGenerator.regeneratePost(request);
+      setGeneratedPost(post);
+      
+      // Analyze the new post
+      const analysis = analyzePost(post);
+      setPostAnalysis(analysis);
+    } catch (error) {
+      console.error('Failed to regenerate post:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (generatedPost) {
+      try {
+        await navigator.clipboard.writeText(generatedPost.content);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (error) {
+        console.error('Failed to copy post:', error);
+      }
     }
   };
 
@@ -169,6 +233,66 @@ const PostGenerator = () => {
             </label>
           </div>
 
+          {/* Template Selector Toggle */}
+          <div className="mt-6">
+            <button
+              onClick={() => setShowTemplateSelector(!showTemplateSelector)}
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-2"
+            >
+              <Brain className="w-4 h-4" />
+              <span>{showTemplateSelector ? 'Hide' : 'Show'} Template Options</span>
+            </button>
+          </div>
+
+          {/* Template Selector */}
+          {showTemplateSelector && (
+            <div className="mt-4 space-y-4 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Template Category
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {TEMPLATE_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.value}
+                      onClick={() => setSelectedCategory(cat.value as TemplateCategory)}
+                      className={`p-2 rounded text-sm text-left transition-colors ${
+                        selectedCategory === cat.value
+                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                          : 'bg-white border border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-lg mb-1">{cat.emoji}</div>
+                      <div className="font-medium">{cat.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Template Style
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {TEMPLATE_STYLES.map((style) => (
+                    <button
+                      key={style.value}
+                      onClick={() => setSelectedStyle(style.value as TemplateStyle)}
+                      className={`p-2 rounded text-sm text-left transition-colors ${
+                        selectedStyle === style.value
+                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                          : 'bg-white border border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-lg mb-1">{style.emoji}</div>
+                      <div className="font-medium">{style.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Generate Button */}
           <button
             onClick={handleGenerate}
@@ -204,6 +328,68 @@ const PostGenerator = () => {
               {/* Post Content */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-gray-900 whitespace-pre-wrap">{generatedPost.content}</p>
+              </div>
+
+              {/* Post Analysis */}
+              {postAnalysis && (
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-3 flex items-center">
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Post Analysis
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <div className="text-sm text-blue-700">Readability</div>
+                      <div className="text-lg font-semibold text-blue-900">{postAnalysis.readabilityScore}/10</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-blue-700">Engagement Potential</div>
+                      <div className="text-lg font-semibold text-blue-900">{postAnalysis.engagementPotential}/10</div>
+                    </div>
+                  </div>
+                  {postAnalysis.suggestions.length > 0 && (
+                    <div>
+                      <div className="text-sm text-blue-700 mb-2">Suggestions:</div>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        {postAnalysis.suggestions.map((suggestion, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="text-blue-600 mr-2">•</span>
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleRegenerate}
+                  disabled={isGenerating}
+                  className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex-1 flex items-center justify-center space-x-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Regenerate</span>
+                </button>
+                
+                <button
+                  onClick={handleCopy}
+                  className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex-1 flex items-center justify-center space-x-2"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               {/* Post Details */}

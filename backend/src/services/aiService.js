@@ -16,10 +16,41 @@ const mockPosts = {
   'Mobile Development': '📱 Mobile Development: The mobile-first approach isn\'t just a trend, it\'s a necessity. Just launched an app that works seamlessly across all devices. The secret? Progressive enhancement and responsive design. #MobileDev #AppDevelopment #Tech'
 };
 
-export const generateAIPost = async ({ topic, tone = 'professional', vibe = 'Story', originalPost = null }) => {
+export const generateAIPost = async ({ topic, tone = 'professional', vibe = 'Story', originalPost = null, prompt, useCustomPrompt, includeHashtags, includeCTA }) => {
   try {
+    // Check if we have a custom prompt from the frontend
+    if (useCustomPrompt && prompt) {
+      console.log('🟢 [AIService] Using custom prompt!');
+      console.log('📝 [AIService] Prompt sent to OpenAI:', prompt.slice(0, 300));
+      
+      // Use the custom prompt with OpenAI
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a senior software engineer with 10+ years of experience creating viral LinkedIn content. Write authentic, engaging posts that sound like real experience. You must follow the user\'s instructions exactly.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        max_tokens: 800,
+        temperature: 0.8,
+      });
+
+      const content = completion.choices[0]?.message?.content;
+      console.log('🟢 [AIService] Raw OpenAI response:', content ? content.slice(0, 300) : '[No content]');
+      
+      if (!content) {
+        throw new Error('Failed to generate content with custom prompt');
+      }
+      return content.trim();
+    }
+
     if (!process.env.OPENAI_API_KEY) {
-      console.log('🤖 No OpenAI API key found, using mock AI post generation');
+      console.log('🟡 [AIService] No OpenAI API key found, using mock AI post generation');
       
       // Fallback to mock content if no API key
       if (originalPost) {
@@ -39,12 +70,12 @@ What's your take on this? How do you see this evolving in the next few years?
       }
     }
 
-    console.log('🤖 Using OpenAI for post generation');
+    console.log('🟡 [AIService] Not using custom prompt. Fallback to default generation. Request:', JSON.stringify({ topic, tone, vibe, originalPost: !!originalPost }));
     
-    let prompt;
+    let defaultPrompt;
     if (originalPost) {
       // Optimize existing post
-      prompt = `You are a professional LinkedIn content creator. Please optimize this post for better engagement while maintaining the core message:
+      defaultPrompt = `You are a professional LinkedIn content creator. Please optimize this post for better engagement while maintaining the core message:
 
 Original post: "${originalPost}"
 
@@ -63,7 +94,7 @@ Please create an engaging LinkedIn post that:
 Make it sound natural and conversational, not like AI-generated content.`;
     } else {
       // Generate new post
-      prompt = `You are a professional LinkedIn content creator specializing in ${topic.toLowerCase()} content.
+      defaultPrompt = `You are a professional LinkedIn content creator specializing in ${topic.toLowerCase()} content.
 
 Please create an engaging LinkedIn post about "${topic}" with the following requirements:
 - Tone: ${tone}
@@ -86,7 +117,7 @@ The post should be informative, engaging, and provide value to the audience.`;
         },
         {
           role: "user",
-          content: prompt
+          content: defaultPrompt
         }
       ],
       max_tokens: 400,
