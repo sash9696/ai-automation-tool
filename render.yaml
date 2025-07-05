@@ -1,5 +1,4 @@
 services:
-  # Frontend Service
   - type: web
     name: ai-automation-frontend
     env: static
@@ -13,7 +12,6 @@ services:
       - key: VITE_APP_VERSION
         value: "1.0.0"
 
-  # Backend Service
   - type: web
     name: ai-automation-backend
     env: node
@@ -44,7 +42,6 @@ services:
           name: ai-automation-redis
           property: connectionString
 
-  # AI Service
   - type: web
     name: ai-automation-ai-service
     env: node
@@ -60,7 +57,6 @@ services:
       - key: BACKEND_URL
         value: https://ai-automation-backend.onrender.com/api
 
-  # Scheduler Service
   - type: worker
     name: ai-automation-scheduler
     env: node
@@ -83,13 +79,11 @@ services:
       - key: BACKEND_URL
         value: https://ai-automation-backend.onrender.com/api
 
+  - type: redis
+    name: ai-automation-redis
+    ipAllowList: []
+
 databases:
   - name: ai-automation-db
     databaseName: ai_automation
-    user: ai_automation_user
-
-services:
-  # Redis Service
-  - type: redis
-    name: ai-automation-redis
-    ipAllowList: [] 
+    user: ai_automation_user 
