@@ -1,0 +1,1 @@
+{"version":3,"file":"settingsController.d.ts","sourceRoot":"","sources":["../../src/controllers/settingsController.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AAY1D,eAAO,MAAM,WAAW,GAAU,MAAM,OAAO,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY,kBASjF,CAAC;AAEF,eAAO,MAAM,cAAc,GAAU,KAAK,OAAO,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY,kBA2BnF,CAAC"}

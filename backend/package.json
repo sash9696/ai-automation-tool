@@ -1,0 +1,41 @@
+{
+  "name": "linkedin-ai-backend",
+  "version": "1.0.0",
+  "description": "LinkedIn AI Automation Backend API",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "dotenv -e .env -- nodemon src/index.js",
+    "build": "echo 'No build step needed for JavaScript'",
+    "test": "echo 'No tests configured yet'",
+    "setup-linkedin": "node setup-linkedin.js",
+    "enable-mock-linkedin": "node enable-mock-linkedin.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "languagedetect": "^2.0.0",
+    "morgan": "^1.10.0",
+    "openai": "^4.20.1",
+    "sentiment": "^5.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "linkedin",
+    "ai",
+    "automation",
+    "api",
+    "express",
+    "javascript"
+  ],
+  "author": "LinkedIn AI Tool",
+  "license": "MIT"
+}
