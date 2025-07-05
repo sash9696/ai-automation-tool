@@ -31,7 +31,17 @@
     "lint": "npm run lint:frontend && npm run lint:backend",
     "lint:frontend": "cd frontend && npm run lint",
     "lint:backend": "cd backend && npm run lint",
-    "status": "echo \"🔍 Checking service status...\" && curl -s http://localhost:3001/health > /dev/null && echo \"✅ Backend: Running on port 3001\" || echo \"❌ Backend: Not running\" && curl -s http://localhost:3002/health > /dev/null && echo \"✅ AI Service: Running on port 3002\" || echo \"❌ AI Service: Not running\" && curl -s -I http://localhost:5173 > /dev/null && echo \"✅ Frontend: Running on port 5173\" || echo \"❌ Frontend: Not running\""
+    "status": "echo \"🔍 Checking service status...\" && curl -s http://localhost:3001/health > /dev/null && echo \"✅ Backend: Running on port 3001\" || echo \"❌ Backend: Not running\" && curl -s http://localhost:3002/health > /dev/null && echo \"✅ AI Service: Running on port 3002\" || echo \"❌ AI Service: Not running\" && curl -s -I http://localhost:5173 > /dev/null && echo \"✅ Frontend: Running on port 5173\" || echo \"❌ Frontend: Not running\"",
+    "deploy": "./scripts/deploy.sh",
+    "deploy:dev": "./scripts/deploy.sh dev",
+    "deploy:local": "./scripts/deploy.sh local",
+    "deploy:vercel": "./scripts/deploy.sh vercel",
+    "deploy:railway": "./scripts/deploy.sh railway",
+    "deploy:docker": "./scripts/deploy.sh docker",
+    "deploy:full": "./scripts/deploy.sh full",
+    "deploy:setup": "./scripts/deploy.sh setup",
+    "deploy:status": "./scripts/deploy.sh status",
+    "deploy:stop": "./scripts/deploy.sh stop"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
