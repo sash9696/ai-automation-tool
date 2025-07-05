@@ -38,6 +38,7 @@ app.get('/health', (_req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env['NODE_ENV'] || 'development',
   });
+  return;
 });
 
 // AI post generation endpoint
@@ -163,12 +164,12 @@ app.use((req, res) => {
   });
 });
 
-app.use((error: any, _req: any, res: any, _next: any) => {
+app.use((error: unknown, _req: any, res: any, _next: any) => {
   console.error('Error:', error);
   res.status(500).json({
     success: false,
     error: 'Internal Server Error',
-    message: error.message,
+    message: error instanceof Error ? error.message : 'Unknown error occurred',
   });
 });
 
