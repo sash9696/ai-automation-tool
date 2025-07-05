@@ -9,7 +9,7 @@ import {
   getAnalytics,
   getWorkerStatus
 } from '../controllers/premiumController.js';
-import { validatePremiumRequest } from '../middleware/validation.js';
+import { validatePremiumRequest, validateScheduleBatch } from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ const router = express.Router();
 router.post('/generate-trending', validatePremiumRequest, generateTrendingContent);
 
 // Schedule batch of posts
-router.post('/schedule-batch', validatePremiumRequest, scheduleBatch);
+router.post('/schedule-batch', validateScheduleBatch, scheduleBatch);
 
 // Get all batches
 router.get('/batches', getBatches);
