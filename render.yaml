@@ -88,7 +88,7 @@ databases:
     databaseName: ai_automation
     user: ai_automation_user
 
-services:
+  # Redis Service
   - type: redis
     name: ai-automation-redis
     ipAllowList: [] 
