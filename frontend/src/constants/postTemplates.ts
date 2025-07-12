@@ -44,87 +44,155 @@ export type TemplateHook =
 // Template Map for fast lookup and rotation
 export const POST_TEMPLATES = new Map<string, PostTemplate>([
   
-  // FRONTEND TEMPLATES
+  // FRONTEND TEMPLATES (Full Stack Development focused)
   ['frontend-story-1', {
     id: 'frontend-story-1',
-    name: 'The React Refactor That Changed Everything',
+    name: 'The React Performance Bug That Taught Me Everything',
     category: 'frontend',
     style: 'story',
     hook: 'time-based',
-    prompt: `You are a senior frontend engineer with 10+ years of experience. Write a LinkedIn post about a React refactoring experience that taught you something important.
+    prompt: `You are a senior full-stack developer sharing a specific React/frontend performance issue you solved. Write a LinkedIn post about a real performance problem and your solution.
 
 Requirements:
-- Start with a time hook (like "Last month, I spent 3 days refactoring...")
-- Include specific details about what you did
-- Share what you learned and why it matters
-- Use a friendly, experienced tone
-- Include 3-5 relevant hashtags
-- End with a question for others
+- Start with a time hook (like "Last week, our React app was crashing under load...")
+- Focus specifically on FULL STACK DEVELOPMENT challenges
+- Mention specific technologies (React, JavaScript, CSS, bundlers, etc.)
+- Include the problem symptoms and debugging process
+- Explain the technical solution with specific tools/techniques
+- Share performance metrics or improvements achieved
+- Use frontend-specific terminology (components, hooks, bundling, etc.)
+- Include 3-5 relevant hashtags (#React #Frontend #Performance #WebDev #JavaScript)
+- End with a question about others' performance optimization experiences
 - Keep it under 1300 characters
-- Make it sound like real experience, not AI-generated
+- Sound like you've dealt with real production issues
 
 Topic: {topic}
-Tone: {tone}`,
-    example: `Last month, I spent 3 days refactoring a React component that was 800 lines long.
+Tone: {tone}
 
-The original code worked, but it was a nightmare to maintain. Every bug fix felt like playing Jenga with the entire component.
+Focus on: React optimization, frontend performance, web development challenges, modern JavaScript`,
+    example: `Last week, our React app was crashing under load. Users were seeing white screens, and our error monitoring was going crazy.
 
-Here's what I learned:
+The culprit? A massive component re-rendering 10,000+ items on every state change.
 
-🔧 Break down large components into smaller, focused ones
-🧪 Write tests BEFORE refactoring (saved me twice!)
-📚 Document the "why" behind architectural decisions
+Here's how I fixed it:
 
-The refactor reduced the component to 150 lines and made it 10x easier to debug.
+🔧 **React.memo** - Prevented unnecessary re-renders
+⚡ **useMemo** - Memoized expensive calculations  
+📦 **React.lazy** - Code-split heavy components
+🎯 **useCallback** - Stabilized event handlers
 
-But here's the real lesson: Technical debt isn't just about code quality—it's about team velocity and mental overhead.
+Result: 3-second load time → 0.8 seconds ✨
 
-What's the largest component you've ever refactored? What did you learn from it?
+The real lesson? Performance isn't just about algorithms—it's about understanding your framework's rendering behavior.
 
-#React #Frontend #Refactoring #SoftwareEngineering #CodeQuality`,
+React DevTools Profiler became my best friend during this debugging session.
+
+What's your worst React performance nightmare? How did you solve it?
+
+#React #Frontend #Performance #WebDev #JavaScript`,
     viralScore: 9.2,
-    hashtags: ['#React', '#Frontend', '#Refactoring', '#SoftwareEngineering', '#CodeQuality'],
-    useCases: ['react', 'refactoring', 'code-quality', 'team-velocity']
+    hashtags: ['#React', '#Frontend', '#Performance', '#WebDev', '#JavaScript'],
+    useCases: ['react-optimization', 'frontend-performance', 'debugging', 'production-issues', 'web-development']
   }],
 
   ['frontend-listicle-1', {
     id: 'frontend-listicle-1',
-    name: '5 Frontend Performance Secrets',
+    name: '5 Full Stack Performance Secrets That Actually Work',
     category: 'frontend',
     style: 'listicle',
     hook: 'number',
-    prompt: `You are a performance optimization expert. Write a LinkedIn post sharing 5 specific frontend performance techniques that actually work in real projects.
+    prompt: `You are a full-stack performance optimization expert. Write a LinkedIn post sharing 5 specific full-stack performance techniques that deliver real results.
 
 Requirements:
-- Start with a number hook (like "After optimizing 50+ websites, here are the 5 techniques...")
-- Each point should be specific and actionable
-- Include real metrics or examples where possible
-- Use bullet points for easy reading
-- Include 3-5 relevant hashtags
-- End with a call to action
+- Start with a number hook (like "After optimizing 100+ full-stack applications, here are the 5 techniques...")
+- Focus on FULL STACK DEVELOPMENT performance (frontend + backend)
+- Each point should mention specific technologies (React, Node.js, databases, CDNs, etc.)
+- Include real metrics or performance improvements
+- Cover both frontend and backend optimization
+- Use bullet points with emojis for readability
+- Include 3-5 relevant hashtags (#FullStack #Performance #WebDev #React #NodeJS)
+- End with a question about readers' biggest performance wins
 - Keep it under 1300 characters
-- Sound like you've actually used these techniques
+- Sound like you've optimized real production systems
 
 Topic: {topic}
-Tone: {tone}`,
-    example: `After optimizing 50+ websites, here are the 5 frontend performance techniques that actually work:
+Tone: {tone}
 
-🚀 Code Splitting: Reduced initial bundle size by 60% using dynamic imports
-🎯 Image Optimization: Switched to WebP + lazy loading = 40% faster page loads
-⚡ Memoization: React.memo + useMemo cut re-renders by 70%
-📦 Tree Shaking: Removed 200KB of unused code with proper ES6 imports
-🔍 Bundle Analysis: Webpack Bundle Analyzer revealed 3MB of duplicate dependencies
+Focus on: Full-stack performance, web optimization, React performance, backend optimization, modern web development`,
+    example: `After optimizing 100+ full-stack applications, here are the 5 techniques that actually work:
 
-The result? 2.5s → 0.8s page load times.
+🚀 **Code Splitting + Lazy Loading** - Reduced initial bundle size by 70% using React.lazy()
+⚡ **Database Query Optimization** - Added proper indexing, cut API response time from 2s to 200ms
+🎯 **React Memo + useMemo** - Eliminated unnecessary re-renders, improved UI responsiveness by 60%
+📦 **CDN + Image Optimization** - WebP format + CloudFront = 40% faster page loads
+🔄 **API Response Caching** - Redis caching reduced database load by 80%
 
-Performance isn't just about speed—it's about user experience and conversion rates.
+The secret? Performance is a full-stack problem that requires full-stack solutions.
 
-Which technique has given you the biggest performance boost?
+Don't just optimize the frontend—optimize the entire data flow from database to UI.
 
-#Frontend #Performance #WebOptimization #React #WebDev`,
+What's your biggest full-stack performance win?
+
+#FullStack #Performance #WebDev #React #NodeJS`,
     viralScore: 8.8,
-    hashtags: ['#Frontend', '#Performance', '#WebOptimization', '#React', '#WebDev'],
-    useCases: ['performance', 'optimization', 'web-development', 'user-experience']
+    hashtags: ['#FullStack', '#Performance', '#WebDev', '#React', '#NodeJS'],
+    useCases: ['full-stack-optimization', 'performance-tuning', 'web-development', 'react-optimization', 'backend-performance']
+  }],
+
+  ['frontend-case-study-1', {
+    id: 'frontend-case-study-1',
+    name: 'How We Rebuilt Our Frontend Architecture',
+    category: 'frontend',
+    style: 'case-study',
+    hook: 'achievement',
+    prompt: `You are a senior full-stack developer sharing a major frontend architecture project. Write a LinkedIn post about rebuilding or modernizing a frontend application.
+
+Requirements:
+- Start with an achievement hook (like "Just finished rebuilding our entire frontend architecture...")
+- Focus on FULL STACK DEVELOPMENT and modern frontend practices
+- Mention specific technologies and architectural decisions
+- Include the problems with the old system and benefits of the new one
+- Share specific metrics or improvements achieved
+- Explain the technical challenges and solutions
+- Use modern frontend terminology (micro-frontends, state management, etc.)
+- Include 3-5 relevant hashtags (#Frontend #Architecture #React #ModernWeb #FullStack)
+- End with insights about frontend architecture decisions
+- Keep it under 1300 characters
+- Sound like you've led a major frontend project
+
+Topic: {topic}
+Tone: {tone}
+
+Focus on: Frontend architecture, modern web development, React ecosystem, full-stack solutions, technical leadership`,
+    example: `Just finished rebuilding our entire frontend architecture from jQuery spaghetti to a modern React ecosystem.
+
+The old system:
+❌ 500KB of jQuery plugins
+❌ No state management
+❌ 15-second load times
+❌ Nightmare to maintain
+
+The new architecture:
+✅ **React 18** with Suspense and concurrent features
+✅ **Redux Toolkit** for predictable state management
+✅ **Vite** for lightning-fast builds
+✅ **TypeScript** for type safety
+✅ **Micro-frontend** architecture for team autonomy
+
+Results:
+- 80% faster page loads
+- 90% reduction in bugs
+- 3x faster development velocity
+- Developer happiness through the roof
+
+The biggest lesson? Modern frontend architecture isn't just about performance—it's about developer experience and maintainability.
+
+What's your biggest frontend architecture win?
+
+#Frontend #Architecture #React #ModernWeb #FullStack`,
+    viralScore: 9.0,
+    hashtags: ['#Frontend', '#Architecture', '#React', '#ModernWeb', '#FullStack'],
+    useCases: ['frontend-architecture', 'react-migration', 'modern-web-development', 'technical-leadership', 'system-modernization']
   }],
 
   ['frontend-resource-dump-1', {
@@ -257,7 +325,57 @@ What's your take? Will AI replace developers or amplify them?
     useCases: ['ai-future', 'developer-career', 'automation-fears', 'tech-trends']
   }],
 
-  // TECH CAREER TEMPLATES
+  // TECH CAREER TEMPLATES (College Placements focused)
+  ['career-story-1', {
+    id: 'career-story-1',
+    name: 'From College Rejection to Dream Job',
+    category: 'tech-career',
+    style: 'story',
+    hook: 'struggle',
+    prompt: `You are a senior engineer sharing your college placement journey and career growth story. Write a LinkedIn post about overcoming placement challenges and building a successful tech career.
+
+Requirements:
+- Start with a struggle hook (like "Got rejected from 15 companies during campus placements...")
+- Focus specifically on COLLEGE PLACEMENTS and career development
+- Mention specific challenges faced during placement season
+- Include the journey from college to current position
+- Share specific actions taken to improve and grow
+- Include career milestones and progression
+- Use career-focused terminology (placements, campus interviews, career growth, etc.)
+- Include 3-5 relevant hashtags (#CollegePlacements #CareerGrowth #TechCareer #PlacementSeason #StudentLife)
+- End with encouragement and advice for current students
+- Keep it under 1300 characters
+- Sound like you've been through the placement process and grown from it
+
+Topic: {topic}
+Tone: {tone}
+
+Focus on: College placement experiences, career progression, student challenges, professional growth`,
+    example: `Got rejected from 15 companies during campus placements. My confidence was shattered.
+
+While my friends were celebrating job offers, I was questioning if I was cut out for tech.
+
+Here's what changed everything:
+
+📚 **Focused on fundamentals** - Spent 6 months mastering DSA instead of just memorizing solutions
+🏗️ **Built real projects** - Created a full-stack app that solved an actual problem
+🤝 **Found mentors** - Reached out to seniors who guided my learning path
+💪 **Practiced consistently** - 2 hours daily of coding, no exceptions
+
+Fast forward 3 years: I'm now a senior engineer at a top tech company, and I mentor students going through the same struggle.
+
+The rejections weren't failures—they were redirections toward becoming a better engineer.
+
+To all students facing placement challenges: Your timeline is not everyone's timeline.
+
+What's your biggest placement season lesson?
+
+#CollegePlacements #CareerGrowth #TechCareer #PlacementSeason #StudentLife`,
+    viralScore: 9.3,
+    hashtags: ['#CollegePlacements', '#CareerGrowth', '#TechCareer', '#PlacementSeason', '#StudentLife'],
+    useCases: ['college-placements', 'career-journey', 'student-struggles', 'professional-growth', 'placement-advice']
+  }],
+
   ['career-achievement-1', {
     id: 'career-achievement-1',
     name: 'From Junior to Staff Engineer in 5 Years',
@@ -300,6 +418,62 @@ What's your biggest career lesson so far?
     viralScore: 8.9,
     hashtags: ['#CareerGrowth', '#SoftwareEngineering', '#Leadership', '#Mentorship', '#TechCareer'],
     useCases: ['career-progression', 'promotion', 'leadership', 'mentorship']
+  }],
+
+  ['career-achievement-2', {
+    id: 'career-achievement-2',
+    name: 'How I Cracked My Dream Company During Placements',
+    category: 'tech-career',
+    style: 'achievement',
+    hook: 'achievement',
+    prompt: `You are a successful engineer sharing your college placement success story. Write a LinkedIn post about landing your dream job during campus placements.
+
+Requirements:
+- Start with an achievement hook (like "Just landed my dream job at [Company] during campus placements...")
+- Focus specifically on COLLEGE PLACEMENTS and campus recruitment
+- Share the specific preparation strategy and timeline
+- Include the challenges faced and how you overcame them
+- Mention specific resources, practice platforms, and preparation methods
+- Share the interview process and key moments
+- Use placement-focused terminology (campus recruitment, placement season, etc.)
+- Include 3-5 relevant hashtags (#CollegePlacements #CampusRecruitment #PlacementSuccess #DreamJob #StudentLife)
+- End with advice and encouragement for current students
+- Keep it under 1300 characters
+- Sound like you've recently been through the placement process
+
+Topic: {topic}
+Tone: {tone}
+
+Focus on: Placement success, campus recruitment, student preparation, interview success, career achievement`,
+    example: `Just landed my dream job at Google during campus placements! 🎉
+
+6 months ago, I was struggling with basic DSA problems. Here's how I turned it around:
+
+📚 **Structured Learning Path**:
+- 3 months of DSA fundamentals (LeetCode Easy → Medium)
+- 2 months of system design basics
+- 1 month of mock interviews and company-specific prep
+
+🎯 **Daily Routine**:
+- 2 hours coding practice (morning)
+- 1 hour system design study (evening)
+- Weekend mock interviews with seniors
+
+🔑 **Game Changers**:
+- Consistent daily practice (no zero days)
+- Focus on understanding patterns, not memorizing solutions
+- Mock interviews with placement cell seniors
+
+The Google interview had 4 rounds: 2 coding, 1 system design, 1 behavioral. The key was staying calm and thinking out loud.
+
+To current students: Start early, stay consistent, and don't give up. Your dream company is waiting for you!
+
+What's your placement preparation strategy?
+
+#CollegePlacements #CampusRecruitment #PlacementSuccess #DreamJob #StudentLife`,
+    viralScore: 9.2,
+    hashtags: ['#CollegePlacements', '#CampusRecruitment', '#PlacementSuccess', '#DreamJob', '#StudentLife'],
+    useCases: ['placement-success', 'campus-recruitment', 'google-placement', 'student-achievement', 'placement-preparation']
   }],
 
   ['career-struggle-1', {
@@ -347,44 +521,145 @@ What rejection taught you the most?
     useCases: ['interview-rejection', 'career-setback', 'resilience', 'growth-mindset']
   }],
 
-  // CS CONCEPTS TEMPLATES
+  // CS CONCEPTS TEMPLATES (DSA-focused)
+  ['cs-story-1', {
+    id: 'cs-story-1',
+    name: 'The Algorithm That Saved My Interview',
+    category: 'cs-concepts',
+    style: 'story',
+    hook: 'time-based',
+    prompt: `You are a senior software engineer sharing a specific DSA problem-solving experience. Write a LinkedIn post about a challenging algorithm or data structure problem you encountered.
+
+Requirements:
+- Start with a time hook (like "Yesterday, I solved a problem that reminded me why I love algorithms...")
+- Focus specifically on DATA STRUCTURES AND ALGORITHMS
+- Mention specific algorithms (like Dynamic Programming, Graph Traversal, Binary Search, etc.)
+- Include the problem statement or scenario
+- Explain your approach and the key insight
+- Share the time/space complexity improvement
+- Use technical terms appropriately but keep it accessible
+- Include 3-5 relevant hashtags (#DSA #Algorithms #DataStructures #ProblemSolving #LeetCode)
+- End with a question about others' favorite algorithmic challenges
+- Keep it under 1300 characters
+- Sound like you genuinely enjoy solving algorithmic problems
+
+Topic: {topic}
+Tone: {tone}
+
+Focus on: Algorithms, Data Structures, Problem Solving, Coding Interviews, Competitive Programming`,
+    example: `Yesterday, I solved a problem that reminded me why I love algorithms.
+
+The challenge: Find the shortest path in a weighted graph with negative edges.
+
+My first instinct was Dijkstra's algorithm, but it fails with negative weights. Then I remembered Bellman-Ford!
+
+The beauty of Bellman-Ford:
+- Handles negative weights gracefully
+- Detects negative cycles
+- O(V*E) complexity but guaranteed correctness
+
+Key insight: Sometimes the "slower" algorithm is actually the right choice.
+
+This reminded me that in DSA, understanding the constraints and edge cases is as important as knowing the algorithms themselves.
+
+What's your favorite graph algorithm? Have you ever been surprised by which algorithm worked best?
+
+#DSA #Algorithms #DataStructures #GraphTheory #ProblemSolving`,
+    viralScore: 8.8,
+    hashtags: ['#DSA', '#Algorithms', '#DataStructures', '#GraphTheory', '#ProblemSolving'],
+    useCases: ['algorithms', 'data-structures', 'problem-solving', 'interview-prep', 'competitive-programming']
+  }],
+
   ['cs-question-1', {
     id: 'cs-question-1',
-    name: 'The Algorithm Question That Stumped Me',
+    name: 'The DSA Problem That Stumped Everyone',
     category: 'cs-concepts',
     style: 'question',
     hook: 'question',
-    prompt: `You are a senior engineer sharing an interesting algorithmic problem. Write a LinkedIn post about a specific CS concept or algorithm that challenged you.
+    prompt: `You are a senior engineer sharing a challenging DSA problem. Write a LinkedIn post presenting a specific algorithmic challenge and your solution approach.
 
 Requirements:
-- Start with a thought-provoking question
-- Present the problem clearly but concisely
-- Share your approach and solution
-- Include the broader lesson or concept
-- Use a curious, learning-focused tone
-- Include 3-5 relevant hashtags
-- End with a question for the community
+- Start with an intriguing algorithmic question
+- Present a specific DSA problem (arrays, trees, graphs, dynamic programming, etc.)
+- Explain the naive approach and its limitations
+- Share the optimized solution with time/space complexity
+- Include the key algorithmic insight or pattern
+- Use proper DSA terminology (Big O, recursion, memoization, etc.)
+- Include 3-5 relevant hashtags (#Algorithms #DataStructures #DSA #CodingInterview #LeetCode)
+- End with a question encouraging others to share their approach
 - Keep it under 1300 characters
-- Sound like you're genuinely curious and learning
+- Sound like you're genuinely curious about different solutions
 
 Topic: {topic}
-Tone: {tone}`,
-    example: `What's the most efficient way to find the longest palindromic substring?
+Tone: {tone}
 
-This question stumped me during a recent interview prep session.
+Focus on: Specific algorithmic problems, optimization techniques, complexity analysis, coding patterns`,
+    example: `Here's a DSA problem that stumped our entire team during code review:
 
-The brute force approach is O(n³), but there's a beautiful O(n²) solution using dynamic programming.
+"Given an array of integers, find the maximum sum of non-adjacent elements."
 
-Here's the insight: Instead of checking every substring, we can build palindromes from the center outward.
+Sounds simple, right? But the constraints were brutal: array size up to 10^6.
 
-The key learning? Sometimes the most elegant solutions come from looking at the problem differently.
+Naive approach: Generate all subsequences → O(2^n) 💀
 
-This got me thinking: What's your favorite algorithmic problem? The one that made you go "Aha!" when you finally solved it?
+The breakthrough came when I realized this is a classic DP problem:
+- dp[i] = max(dp[i-1], dp[i-2] + arr[i])
+- Space optimized: just track last two values
 
-#Algorithms #DataStructures #InterviewPrep #ProblemSolving #ComputerScience`,
+Result: O(n) time, O(1) space ✨
+
+The pattern? Many "selection with constraints" problems are actually DP in disguise.
+
+How would you approach this problem? What's your favorite DP optimization trick?
+
+#Algorithms #DynamicProgramming #DSA #CodingInterview #OptimizationTechniques`,
     viralScore: 8.7,
-    hashtags: ['#Algorithms', '#DataStructures', '#InterviewPrep', '#ProblemSolving', '#ComputerScience'],
-    useCases: ['algorithms', 'interview-prep', 'problem-solving', 'dynamic-programming']
+    hashtags: ['#Algorithms', '#DynamicProgramming', '#DSA', '#CodingInterview', '#OptimizationTechniques'],
+    useCases: ['algorithms', 'dynamic-programming', 'problem-solving', 'optimization', 'interview-prep']
+  }],
+
+  ['cs-listicle-1', {
+    id: 'cs-listicle-1',
+    name: '5 DSA Concepts Every Developer Must Master',
+    category: 'cs-concepts',
+    style: 'listicle',
+    hook: 'number',
+    prompt: `You are a senior engineer sharing essential DSA concepts. Write a LinkedIn post listing the most important data structures and algorithms every developer should know.
+
+Requirements:
+- Start with a number hook (like "After 1000+ LeetCode problems, here are the 5 DSA concepts...")
+- Focus on FUNDAMENTAL data structures and algorithms
+- Each point should mention specific DSA concepts (Hash Tables, Binary Trees, Graph Algorithms, etc.)
+- Include practical applications and when to use each
+- Mention time/space complexity where relevant
+- Use bullet points with emojis for readability
+- Include 3-5 relevant hashtags (#DSA #Algorithms #DataStructures #CodingInterview #TechFundamentals)
+- End with a question about which concept readers find most challenging
+- Keep it under 1300 characters
+- Sound like you've mastered these concepts through practice
+
+Topic: {topic}
+Tone: {tone}
+
+Focus on: Core DSA concepts, practical applications, interview preparation, foundational knowledge`,
+    example: `After solving 1000+ LeetCode problems, here are the 5 DSA concepts that matter most:
+
+🔍 **Hash Tables** - O(1) lookups, perfect for frequency counting and caching
+🌳 **Binary Trees** - Master traversals (in/pre/post-order) and tree manipulation
+📊 **Dynamic Programming** - Break down complex problems into overlapping subproblems
+🔗 **Graph Algorithms** - BFS/DFS are your bread and butter for connectivity problems
+⚡ **Two Pointers** - Optimize array/string problems from O(n²) to O(n)
+
+The secret? These 5 patterns solve 80% of coding interview problems.
+
+Master these fundamentals before diving into advanced topics like segment trees or suffix arrays.
+
+Which DSA concept took you the longest to truly understand?
+
+#DSA #Algorithms #DataStructures #CodingInterview #TechFundamentals`,
+    viralScore: 9.1,
+    hashtags: ['#DSA', '#Algorithms', '#DataStructures', '#CodingInterview', '#TechFundamentals'],
+    useCases: ['dsa-fundamentals', 'interview-prep', 'learning-path', 'coding-patterns', 'algorithm-mastery']
   }],
 
   ['cs-resource-dump-1', {
@@ -476,7 +751,57 @@ How can we make system design interviews more effective?
     useCases: ['system-design', 'interview-criticism', 'hiring-practices', 'technical-interviews']
   }],
 
-  // INTERVIEW PREP TEMPLATES
+  // INTERVIEW PREP TEMPLATES (Interview Preparation focused)
+  ['interview-story-1', {
+    id: 'interview-story-1',
+    name: 'The Google Interview Question That Changed My Approach',
+    category: 'interview-prep',
+    style: 'story',
+    hook: 'time-based',
+    prompt: `You are a senior engineer sharing a specific technical interview experience. Write a LinkedIn post about a challenging interview question and the lessons learned.
+
+Requirements:
+- Start with a time hook (like "During my Google interview, I was asked...")
+- Focus specifically on INTERVIEW PREPARATION and technical interviews
+- Mention specific interview types (coding, system design, behavioral)
+- Include the actual question or problem you were asked
+- Explain your thought process and approach
+- Share what you learned about interview strategy
+- Include preparation tips and resources
+- Use interview-specific terminology (whiteboarding, pair programming, etc.)
+- Include 3-5 relevant hashtags (#InterviewPrep #CodingInterview #TechInterview #CareerGrowth #SoftwareEngineering)
+- End with a question about others' interview experiences
+- Keep it under 1300 characters
+- Sound like you've been through multiple technical interviews
+
+Topic: {topic}
+Tone: {tone}
+
+Focus on: Interview strategies, technical problem-solving, preparation techniques, interview mindset`,
+    example: `During my Google interview, I was asked: "Design a system to handle 1 billion daily active users."
+
+My first instinct was to jump into databases and load balancers. Big mistake.
+
+The interviewer stopped me: "What questions would you ask first?"
+
+That's when it clicked. System design interviews aren't about showing off your knowledge—they're about demonstrating your thought process.
+
+Here's what I learned:
+🤔 **Ask clarifying questions first** - What are the core features? What's the scale?
+📊 **Start with requirements** - Functional and non-functional
+🏗️ **Begin simple, then scale** - Don't over-engineer from the start
+💬 **Think out loud** - The interviewer wants to see your reasoning
+
+I didn't get that job, but this experience transformed how I approach technical interviews.
+
+What's the most valuable interview lesson you've learned?
+
+#InterviewPrep #SystemDesign #TechInterview #CareerGrowth #SoftwareEngineering`,
+    viralScore: 9.0,
+    hashtags: ['#InterviewPrep', '#SystemDesign', '#TechInterview', '#CareerGrowth', '#SoftwareEngineering'],
+    useCases: ['interview-preparation', 'system-design', 'technical-interviews', 'career-advice', 'interview-strategy']
+  }],
+
   ['interview-listicle-1', {
     id: 'interview-listicle-1',
     name: '7 Interview Mistakes That Cost Me Job Offers',
@@ -521,6 +846,52 @@ What interview mistake taught you the most?
     viralScore: 8.6,
     hashtags: ['#InterviewPrep', '#CodingInterviews', '#ProblemSolving', '#CareerAdvice', '#TechInterviews'],
     useCases: ['interview-mistakes', 'coding-interviews', 'problem-solving', 'career-advice']
+  }],
+
+  ['interview-listicle-2', {
+    id: 'interview-listicle-2',
+    name: '7 Interview Red Flags That Cost Me Job Offers',
+    category: 'interview-prep',
+    style: 'listicle',
+    hook: 'number',
+    prompt: `You are a senior engineer sharing interview preparation lessons. Write a LinkedIn post about specific interview mistakes and how to avoid them.
+
+Requirements:
+- Start with a number hook (like "After 100+ technical interviews, here are the 7 red flags...")
+- Focus specifically on INTERVIEW PREPARATION and common mistakes
+- Each point should be a specific interview mistake with explanation
+- Include actionable advice for avoiding each mistake
+- Cover different types of interviews (coding, system design, behavioral)
+- Use bullet points with emojis for readability
+- Include 3-5 relevant hashtags (#InterviewPrep #TechInterview #CodingInterview #CareerAdvice #SoftwareEngineering)
+- End with a question about readers' interview experiences
+- Keep it under 1300 characters
+- Sound like you've learned from these mistakes through experience
+
+Topic: {topic}
+Tone: {tone}
+
+Focus on: Interview mistakes, preparation strategies, technical interview skills, career advice, interview mindset`,
+    example: `After 100+ technical interviews, here are the 7 red flags that cost me job offers:
+
+🚫 **Jumping to code without understanding the problem** - Always clarify requirements first
+🚫 **Not testing my solution** - Walk through examples, catch edge cases
+🚫 **Optimizing before getting a working solution** - Brute force first, optimize later
+🚫 **Not communicating my thought process** - Think out loud, even if it feels awkward
+🚫 **Forgetting to ask questions** - Show genuine interest in the role and company
+🚫 **Not preparing for behavioral questions** - Have STAR method examples ready
+🚫 **Giving up when stuck** - Ask for hints, show your problem-solving process
+
+The biggest lesson? Interviews are about demonstrating your thinking process, not just getting the right answer.
+
+Practice these fundamentals more than advanced algorithms.
+
+What interview mistake taught you the most?
+
+#InterviewPrep #TechInterview #CodingInterview #CareerAdvice #SoftwareEngineering`,
+    viralScore: 8.9,
+    hashtags: ['#InterviewPrep', '#TechInterview', '#CodingInterview', '#CareerAdvice', '#SoftwareEngineering'],
+    useCases: ['interview-preparation', 'coding-interviews', 'interview-mistakes', 'career-advice', 'technical-skills']
   }]
 ]);
 

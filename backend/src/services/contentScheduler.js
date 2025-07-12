@@ -98,8 +98,8 @@ class ContentScheduler {
     } else {
       // Otherwise, start from tomorrow
       startDate = new Date(userDate);
-      startDate.setDate(startDate.getDate() + 1);
-      startDate.setHours(hours, minutes, 0, 0);
+    startDate.setDate(startDate.getDate() + 1);
+    startDate.setHours(hours, minutes, 0, 0);
     }
     
     // Generate 7-day schedule

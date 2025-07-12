@@ -114,14 +114,24 @@ export class PostGeneratorService {
    */
   async generatePost(request: GeneratePostRequest): Promise<Post> {
     try {
+      console.log('🔍 [FRONTEND DEBUG] Post generation request received:', JSON.stringify(request, null, 2));
+      
       // 1. Select the best template based on user preferences
       const template = this.selectOptimalTemplate(request);
+      console.log('🔍 [FRONTEND DEBUG] Selected template:', {
+        id: template.id,
+        category: template.category,
+        style: template.style,
+        viralScore: template.viralScore
+      });
       
       // 2. Create a world-class prompt for OpenAI
       const prompt = this.createOpenAIPrompt(template, request);
+      console.log('🔍 [FRONTEND DEBUG] Generated prompt (first 300 chars):', prompt.substring(0, 300) + '...');
       
       // 3. Generate content using OpenAI via backend
       const generatedContent = await this.callOpenAI(prompt, request);
+      console.log('🔍 [FRONTEND DEBUG] Generated content received:', generatedContent ? generatedContent.substring(0, 200) + '...' : 'No content');
       
       // 4. Create the post object
       const post: Post = {
@@ -134,6 +144,14 @@ export class PostGeneratorService {
         updatedAt: new Date().toISOString(),
       };
 
+      console.log('🔍 [FRONTEND DEBUG] Final post object:', {
+        id: post.id,
+        topic: post.topic,
+        tone: post.tone,
+        contentLength: post.content?.length || 0,
+        status: post.status
+      });
+
       // 5. Track template usage and content
       this.templateQueue.enqueue(template.id);
       this.contentSet.add(generatedContent);
@@ -141,7 +159,7 @@ export class PostGeneratorService {
 
       return post;
     } catch (error) {
-      console.error('Post generation failed:', error);
+      console.error('❌ [FRONTEND DEBUG] Post generation failed:', error);
       throw new Error('Failed to generate post');
     }
   }
@@ -158,22 +176,28 @@ export class PostGeneratorService {
       selectedStyle
     });
     
-    // Use selected category if provided, otherwise map from topic
+    // Map frontend topics to template categories - this should take priority
+    const topicToCategory: Record<PostTopic, TemplateCategory> = {
+      'fullstack': 'frontend',
+      'dsa': 'cs-concepts',
+      'interview': 'interview-prep',
+      'placement': 'tech-career'
+    };
+    
+    // Use topic-based mapping first, then fall back to selectedCategory if no topic mapping exists
     let category: TemplateCategory;
-    if (selectedCategory) {
-      category = selectedCategory as TemplateCategory;
-    } else {
-      // Map frontend topics to template categories
-      const topicToCategory: Record<PostTopic, TemplateCategory> = {
-        'fullstack': 'frontend',
-        'dsa': 'cs-concepts',
-        'interview': 'interview-prep',
-        'placement': 'tech-career'
-      };
+    if (topicToCategory[topic]) {
       category = topicToCategory[topic];
+      console.log('📂 Using topic-based category mapping:', category);
+    } else if (selectedCategory) {
+      category = selectedCategory as TemplateCategory;
+      console.log('📂 Using selected category:', category);
+    } else {
+      category = 'frontend'; // Default fallback
+      console.log('📂 Using default category:', category);
     }
 
-    console.log('📂 Selected category:', category);
+    console.log('📂 Final selected category:', category);
 
     let availableTemplates = getTemplatesByCategory(category);
     console.log('📋 Available templates in category:', availableTemplates.length);
@@ -279,6 +303,8 @@ Remember: This should read like a post from someone who has actually lived these
    */
   private async callOpenAI(prompt: string, request: GeneratePostRequest): Promise<string> {
     try {
+      console.log('🔍 [FRONTEND DEBUG] Preparing API call to backend');
+      
       // Use the existing backend API with enhanced request
       const enhancedRequest = {
         ...request,
@@ -286,10 +312,19 @@ Remember: This should read like a post from someone who has actually lived these
         useCustomPrompt: true, // Flag to indicate we're using a custom prompt
       };
       
+      console.log('🔍 [FRONTEND DEBUG] Enhanced request payload:', JSON.stringify(enhancedRequest, null, 2));
+      
       const post = await postsApi.generate(enhancedRequest);
+      console.log('🔍 [FRONTEND DEBUG] Backend API response:', {
+        id: post.id,
+        topic: post.topic,
+        contentLength: post.content?.length || 0,
+        status: post.status
+      });
+      
       return post.content;
     } catch (error) {
-      console.error('OpenAI API call failed:', error);
+      console.error('❌ [FRONTEND DEBUG] OpenAI API call failed:', error);
       throw new Error('Failed to generate content with AI');
     }
   }

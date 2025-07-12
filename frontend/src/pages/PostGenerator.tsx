@@ -45,6 +45,25 @@ const PostGenerator = () => {
     { value: 'placement', label: 'College Placements', emoji: '🎓' },
   ];
 
+  // Topic to category mapping (same as in postGenerator service)
+  const topicToCategory: Record<PostTopic, TemplateCategory> = {
+    'fullstack': 'frontend',
+    'dsa': 'cs-concepts',
+    'interview': 'interview-prep',
+    'placement': 'tech-career'
+  };
+
+  // Handler for topic selection that updates category automatically
+  const handleTopicChange = (newTopic: PostTopic) => {
+    setTopic(newTopic);
+    // Automatically update category based on topic
+    const mappedCategory = topicToCategory[newTopic];
+    if (mappedCategory) {
+      setSelectedCategory(mappedCategory);
+      console.log('🔍 [PAGE DEBUG] Topic changed to:', newTopic, 'Category updated to:', mappedCategory);
+    }
+  };
+
   const timeSlots = [
     { value: '07:00', label: '7:00 AM', description: 'Early morning engagement' },
     { value: '08:00', label: '8:00 AM', description: 'Morning commute time' },
@@ -79,15 +98,34 @@ const PostGenerator = () => {
         selectedStyle,
       };
       
+      console.log('🔍 [PAGE DEBUG] Post generation request from UI:', JSON.stringify(request, null, 2));
+      console.log('🔍 [PAGE DEBUG] Current UI state:', {
+        topic,
+        tone,
+        includeHashtags,
+        includeCTA,
+        selectedCategory,
+        selectedStyle,
+        showTemplateSelector
+      });
+      
       // Use the new template-based post generator
       const post = await postGenerator.generatePost(request);
+      console.log('🔍 [PAGE DEBUG] Generated post received:', {
+        id: post.id,
+        topic: post.topic,
+        contentLength: post.content?.length || 0,
+        status: post.status
+      });
+      
       setGeneratedPost(post);
       
       // Analyze the generated post
       const analysis = analyzePost(post);
+      console.log('🔍 [PAGE DEBUG] Post analysis:', analysis);
       setPostAnalysis(analysis);
     } catch (error) {
-      console.error('Failed to generate post:', error);
+      console.error('❌ [PAGE DEBUG] Failed to generate post:', error);
       // In a real app, show a toast notification
     } finally {
       setIsGenerating(false);
@@ -197,7 +235,7 @@ const PostGenerator = () => {
               {topics.map((t) => (
                 <button
                   key={t.value}
-                  onClick={() => setTopic(t.value as PostTopic)}
+                  onClick={() => handleTopicChange(t.value as PostTopic)}
                   className={`p-3 rounded-lg border-2 text-left transition-colors ${
                     topic === t.value
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
@@ -434,8 +472,8 @@ const PostGenerator = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Schedule Date
-                  </label>
-                  <input
+                </label>
+                <input
                     type="date"
                     value={scheduledTime ? scheduledTime.split('T')[0] : ''}
                     onChange={(e) => {
@@ -446,7 +484,7 @@ const PostGenerator = () => {
                         setScheduledTime('');
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     min={new Date().toISOString().split('T')[0]}
                   />
                 </div>

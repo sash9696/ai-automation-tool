@@ -62,22 +62,46 @@ const updateMockPost = (id, updates) => {
 // Controller functions
 export const generatePostContent = async (req, res, next) => {
   try {
-    const { topic, tone, vibe = 'Story', prompt, useCustomPrompt, includeHashtags, includeCTA } = req.body;
+    console.log('🔍 [POST CONFIG DEBUG] Raw request body:', JSON.stringify(req.body, null, 2));
+    
+    const { topic, tone, vibe = 'Story', prompt, useCustomPrompt, includeHashtags, includeCTA, selectedCategory, selectedStyle } = req.body;
+
+    console.log('🔍 [POST CONFIG DEBUG] Extracted parameters:', {
+      topic,
+      tone,
+      vibe,
+      prompt: prompt ? `${prompt.substring(0, 100)}...` : 'No prompt',
+      useCustomPrompt,
+      includeHashtags,
+      includeCTA,
+      selectedCategory,
+      selectedStyle
+    });
 
     if (!topic) {
+      console.log('❌ [POST CONFIG DEBUG] Missing topic in request');
       return res.status(400).json({ error: 'Topic is required' });
     }
 
-    // Generate post using AI service with all parameters
-    const generatedContent = await generateAIPost({ 
+    // Prepare payload for AI service
+    const aiServicePayload = { 
       topic, 
       tone, 
       vibe, 
       prompt, 
       useCustomPrompt, 
       includeHashtags, 
-      includeCTA 
-    });
+      includeCTA,
+      selectedCategory,
+      selectedStyle
+    };
+
+    console.log('🔍 [POST CONFIG DEBUG] Payload sent to AI service:', JSON.stringify(aiServicePayload, null, 2));
+
+    // Generate post using AI service with all parameters
+    const generatedContent = await generateAIPost(aiServicePayload);
+
+    console.log('🔍 [POST CONFIG DEBUG] Generated content received:', generatedContent ? generatedContent.substring(0, 200) + '...' : 'No content generated');
 
     // Score the generated post using LinkedIn algorithm
     const ranking = rankLinkedInPost(generatedContent, false);
@@ -95,6 +119,14 @@ export const generatePostContent = async (req, res, next) => {
       ranking: ranking
     };
 
+    console.log('🔍 [POST CONFIG DEBUG] Final post object created:', {
+      id: newPost.id,
+      topic: newPost.topic,
+      contentLength: newPost.content?.length || 0,
+      status: newPost.status,
+      hasRanking: !!newPost.ranking
+    });
+
     mockPosts.push(newPost);
 
     res.status(201).json({
@@ -103,7 +135,7 @@ export const generatePostContent = async (req, res, next) => {
       message: 'Post generated successfully'
     });
   } catch (error) {
-    console.error('Error generating post:', error);
+    console.error('❌ [POST CONFIG DEBUG] Error generating post:', error);
     res.status(500).json({ error: 'Failed to generate post' });
   }
 };

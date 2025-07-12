@@ -52,7 +52,26 @@ api.interceptors.response.use(
 export const postsApi = {
   // Generate new post
   generate: async (request: GeneratePostRequest): Promise<Post> => {
+    console.log('🔍 [API DEBUG] Making POST request to /posts/generate');
+    console.log('🔍 [API DEBUG] Request payload:', JSON.stringify(request, null, 2));
+    
     const response = await api.post<ApiResponse<Post>>('/posts/generate', request);
+    
+    console.log('🔍 [API DEBUG] Response received:', {
+      success: response.data.success,
+      hasData: !!response.data.data,
+      message: response.data.message
+    });
+    
+    if (response.data.data) {
+      console.log('🔍 [API DEBUG] Response data:', {
+        id: response.data.data.id,
+        topic: response.data.data.topic,
+        contentLength: response.data.data.content?.length || 0,
+        status: response.data.data.status
+      });
+    }
+    
     return response.data.data!;
   },
 

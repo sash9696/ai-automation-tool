@@ -16,12 +16,25 @@ const mockPosts = {
   'Mobile Development': '📱 Mobile Development: The mobile-first approach isn\'t just a trend, it\'s a necessity. Just launched an app that works seamlessly across all devices. The secret? Progressive enhancement and responsive design. #MobileDev #AppDevelopment #Tech'
 };
 
-export const generateAIPost = async ({ topic, tone = 'professional', vibe = 'Story', originalPost = null, prompt, useCustomPrompt, includeHashtags, includeCTA }) => {
+export const generateAIPost = async ({ topic, tone = 'professional', vibe = 'Story', originalPost = null, prompt, useCustomPrompt, includeHashtags, includeCTA, selectedCategory, selectedStyle }) => {
   try {
+    console.log('🔍 [AI SERVICE DEBUG] Received parameters:', {
+      topic,
+      tone,
+      vibe,
+      originalPost: originalPost ? 'Present' : 'Not present',
+      prompt: prompt ? `${prompt.substring(0, 100)}...` : 'No prompt',
+      useCustomPrompt,
+      includeHashtags,
+      includeCTA,
+      selectedCategory,
+      selectedStyle
+    });
+
     // Check if we have a custom prompt from the frontend
     if (useCustomPrompt && prompt) {
-      console.log('🟢 [AIService] Using custom prompt!');
-      console.log('📝 [AIService] Prompt sent to OpenAI:', prompt.slice(0, 300));
+      console.log('🟢 [AI SERVICE DEBUG] Using custom prompt!');
+      console.log('📝 [AI SERVICE DEBUG] Custom prompt (first 300 chars):', prompt.slice(0, 300));
       
       // Use the custom prompt with OpenAI
       const completion = await openai.chat.completions.create({
@@ -41,7 +54,7 @@ export const generateAIPost = async ({ topic, tone = 'professional', vibe = 'Sto
       });
 
       const content = completion.choices[0]?.message?.content;
-      console.log('🟢 [AIService] Raw OpenAI response:', content ? content.slice(0, 300) : '[No content]');
+      console.log('🟢 [AI SERVICE DEBUG] OpenAI response received:', content ? `${content.substring(0, 200)}...` : '[No content]');
       
       if (!content) {
         throw new Error('Failed to generate content with custom prompt');
@@ -49,31 +62,35 @@ export const generateAIPost = async ({ topic, tone = 'professional', vibe = 'Sto
       return content.trim();
     }
 
+    // Fallback to mock data for testing
+    console.log('🟡 [AI SERVICE DEBUG] Using fallback mock generation');
+    console.log('🟡 [AI SERVICE DEBUG] Configuration for mock generation:', {
+      topic,
+      tone,
+      vibe,
+      includeHashtags,
+      includeCTA,
+      selectedCategory,
+      selectedStyle
+    });
+    
+    // Check if we have OpenAI API key for real generation
     if (!process.env.OPENAI_API_KEY) {
-      console.log('🟡 [AIService] No OpenAI API key found, using mock AI post generation');
-      
-      // Fallback to mock content if no API key
-      if (originalPost) {
-        return `🚀 ${topic}: I've been thinking about this topic a lot lately.
-
-${originalPost}
-
-The key insight here is that we need to approach this differently. 
-
-What's your take on this? How do you see this evolving in the next few years?
-
-#${topic.replace(/\s+/g, '')} #Innovation #FutureOfWork`;
-      } else {
-        return mockPosts[topic] || `🚀 ${topic}: Exploring the latest trends and insights in ${topic.toLowerCase()}. 
+      console.log('🔴 [AI SERVICE DEBUG] No OpenAI API key - using static mock content');
+      const mockPost = mockPosts[topic] || `🚀 ${topic}: Exploring the latest trends and insights in ${topic}. 
     The landscape is evolving rapidly, and staying ahead requires continuous learning and adaptation. 
-    What are your thoughts on the future of ${topic.toLowerCase()}? #${topic.replace(/\s+/g, '')} #Innovation #FutureOfWork`;
-      }
+    What are your thoughts on the future of ${topic}? #${topic.replace(/\s+/g, '')} #Innovation #FutureOfWork`;
+      
+      console.log('🔴 [AI SERVICE DEBUG] Mock post generated:', mockPost.substring(0, 200) + '...');
+      return mockPost;
     }
 
-    console.log('🟡 [AIService] Not using custom prompt. Fallback to default generation. Request:', JSON.stringify({ topic, tone, vibe, originalPost: !!originalPost }));
+    // Build prompt based on configuration
+    console.log('🟢 [AI SERVICE DEBUG] Building prompt with OpenAI API key available');
     
     let defaultPrompt;
     if (originalPost) {
+      console.log('🔄 [AI SERVICE DEBUG] Optimizing existing post');
       // Optimize existing post
       defaultPrompt = `You are a professional LinkedIn content creator. Please optimize this post for better engagement while maintaining the core message:
 
@@ -82,31 +99,39 @@ Original post: "${originalPost}"
 Topic: ${topic}
 Tone: ${tone}
 Vibe: ${vibe}
+Selected Category: ${selectedCategory || 'Not specified'}
+Selected Style: ${selectedStyle || 'Not specified'}
 
 Please create an engaging LinkedIn post that:
 1. Maintains the original message but makes it more compelling
 2. Uses a ${tone} tone
-3. Includes relevant hashtags
-4. Encourages engagement and discussion
+3. ${includeHashtags ? 'Includes relevant hashtags' : 'Does not include hashtags'}
+4. ${includeCTA ? 'Encourages engagement and discussion' : 'Does not include call-to-action'}
 5. Is optimized for LinkedIn's algorithm
 6. Keeps it between 100-200 words
 
 Make it sound natural and conversational, not like AI-generated content.`;
     } else {
+      console.log('�� [AI SERVICE DEBUG] Creating new post');
       // Generate new post
       defaultPrompt = `You are a professional LinkedIn content creator specializing in ${topic.toLowerCase()} content.
 
 Please create an engaging LinkedIn post about "${topic}" with the following requirements:
+- Topic: ${topic}
 - Tone: ${tone}
 - Style: ${vibe}
-- Include relevant hashtags
-- Encourage engagement and discussion
+- Selected Category: ${selectedCategory || 'Not specified'}
+- Selected Style: ${selectedStyle || 'Not specified'}
+- ${includeHashtags ? 'Include relevant hashtags' : 'Do not include hashtags'}
+- ${includeCTA ? 'Encourage engagement and discussion' : 'Do not include call-to-action'}
 - Optimized for LinkedIn's algorithm
 - Length: 100-200 words
 - Make it sound natural and conversational, not like AI-generated content
 
 The post should be informative, engaging, and provide value to the audience.`;
     }
+
+    console.log('🔍 [AI SERVICE DEBUG] Final prompt built (first 400 chars):', defaultPrompt.substring(0, 400) + '...');
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -125,7 +150,7 @@ The post should be informative, engaging, and provide value to the audience.`;
     });
 
     const generatedContent = completion.choices[0].message.content.trim();
-    console.log('🤖 OpenAI generated content:', generatedContent);
+    console.log('🟢 [AI SERVICE DEBUG] OpenAI generated content:', generatedContent ? generatedContent.substring(0, 200) + '...' : 'No content generated');
     
     return generatedContent;
   } catch (error) {
