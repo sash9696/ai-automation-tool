@@ -60,7 +60,6 @@ const PostGenerator = () => {
     const mappedCategory = topicToCategory[newTopic];
     if (mappedCategory) {
       setSelectedCategory(mappedCategory);
-      console.log('🔍 [PAGE DEBUG] Topic changed to:', newTopic, 'Category updated to:', mappedCategory);
     }
   };
 
@@ -98,34 +97,15 @@ const PostGenerator = () => {
         selectedStyle,
       };
       
-      console.log('🔍 [PAGE DEBUG] Post generation request from UI:', JSON.stringify(request, null, 2));
-      console.log('🔍 [PAGE DEBUG] Current UI state:', {
-        topic,
-        tone,
-        includeHashtags,
-        includeCTA,
-        selectedCategory,
-        selectedStyle,
-        showTemplateSelector
-      });
-      
       // Use the new template-based post generator
       const post = await postGenerator.generatePost(request);
-      console.log('🔍 [PAGE DEBUG] Generated post received:', {
-        id: post.id,
-        topic: post.topic,
-        contentLength: post.content?.length || 0,
-        status: post.status
-      });
-      
       setGeneratedPost(post);
       
       // Analyze the generated post
       const analysis = analyzePost(post);
-      console.log('🔍 [PAGE DEBUG] Post analysis:', analysis);
       setPostAnalysis(analysis);
     } catch (error) {
-      console.error('❌ [PAGE DEBUG] Failed to generate post:', error);
+      console.error('Failed to generate post:', error);
       // In a real app, show a toast notification
     } finally {
       setIsGenerating(false);
