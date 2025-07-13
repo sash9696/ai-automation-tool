@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b --incremental && vite build",
+    "build:memory-optimized": "NODE_OPTIONS='--max-old-space-size=4096' tsc -b --incremental && NODE_OPTIONS='--max-old-space-size=4096' vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
