@@ -5,15 +5,24 @@ import {
   BarChart3, 
   Settings,
   Crown,
-  User 
+  User,
+  LogOut
 } from 'lucide-react';
 import type { LinkedInAuthResponse } from '../types';
 
-interface NavbarProps {
-  linkedInProfile: LinkedInAuthResponse['profile'] | null;
+interface User {
+  id: string;
+  email: string;
+  name: string;
 }
 
-const Navbar = ({ linkedInProfile }: NavbarProps) => {
+interface NavbarProps {
+  linkedInProfile: LinkedInAuthResponse['profile'] | null;
+  user: User;
+  onLogout: () => Promise<void>;
+}
+
+const Navbar = ({ linkedInProfile, user, onLogout }: NavbarProps) => {
   const location = useLocation();
 
   const navigation = [
@@ -64,31 +73,45 @@ const Navbar = ({ linkedInProfile }: NavbarProps) => {
             })}
           </div>
 
-          {/* LinkedIn Status */}
+          {/* User Profile & LinkedIn Status */}
           <div className="flex items-center space-x-4">
-            {linkedInProfile ? (
+            {/* User Info */}
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-green-600" />
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-blue-600" />
                 </div>
                 <div className="hidden sm:block">
                   <p className="text-sm font-medium text-gray-900">
-                    {linkedInProfile.firstName} {linkedInProfile.lastName}
+                  {user.name}
                   </p>
-                  <p className="text-xs text-gray-500">LinkedIn Connected</p>
-                </div>
+                <p className="text-xs text-gray-500">{user.email}</p>
               </div>
-            ) : (
+            </div>
+
+            {/* LinkedIn Status */}
+            <div className="flex items-center space-x-2">
+              {linkedInProfile ? (
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-gray-400" />
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-xs text-green-600 font-medium">LinkedIn Connected</span>
                 </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">Not Connected</p>
-                  <p className="text-xs text-gray-500">Connect LinkedIn</p>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  <span className="text-xs text-gray-500">LinkedIn Disconnected</span>
                 </div>
+              )}
               </div>
-            )}
+
+            {/* Logout Button */}
+            <button
+              onClick={onLogout}
+              className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 hover:text-red-600 transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </div>
       </div>

@@ -1,46 +1,35 @@
 import express from 'express';
-import { getAuthUrlController, handleCallbackController, getAuthStatusController, getProfileController, disconnectController, setTokenController } from '../controllers/linkedInController.js';
+import { 
+  getAuthUrlController, 
+  handleCallbackController, 
+  completeAuthController,
+  getAuthStatusController, 
+  getUserProfileController,
+  publishPostController,
+  setTokenController,
+  disconnectController
+} from '../controllers/linkedInController.js';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get LinkedIn auth URL
+// Public routes (no auth required)
 router.get('/auth-url', getAuthUrlController);
-
-// Handle LinkedIn OAuth callback
 router.get('/callback', handleCallbackController);
 
-// Get authentication status
-router.get('/status', getAuthStatusController);
-
-// Get user profile
-router.get('/profile', getProfileController);
-
-// Disconnect LinkedIn
-router.post('/disconnect', disconnectController);
-
-// Set LinkedIn token manually
-router.post('/set-token', setTokenController);
-
-// Test endpoint to check if LinkedIn service is working
-router.get('/test', (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      clientId: process.env.LINKEDIN_CLIENT_ID ? 'configured' : 'not configured',
-      useMockAuth: process.env.USE_MOCK_LINKEDIN === 'true',
-      nodeEnv: process.env.NODE_ENV,
-      hasAccessToken: !!process.env.LINKEDIN_ACCESS_TOKEN,
-      tokenLength: process.env.LINKEDIN_ACCESS_TOKEN ? process.env.LINKEDIN_ACCESS_TOKEN.length : 0,
-      tokenPrefix: process.env.LINKEDIN_ACCESS_TOKEN ? process.env.LINKEDIN_ACCESS_TOKEN.substring(0, 10) + '...' : 'none'
-    },
-    message: 'LinkedIn service test endpoint'
-  });
-});
+// Protected routes (require authentication)
+router.post('/complete-auth', requireAuth, completeAuthController);
+router.get('/status', requireAuth, getAuthStatusController);
+router.get('/profile', requireAuth, getUserProfileController);
+router.post('/publish', requireAuth, publishPostController);
+router.post('/set-token', requireAuth, setTokenController);
+router.post('/disconnect', requireAuth, disconnectController);
 
 // Test endpoint to test database session persistence
-router.get('/test-session', async (req, res) => {
+router.get('/test-session', optionalAuth, async (req, res) => {
   try {
     const databaseService = (await import('../services/databaseService.js')).default;
+    const userId = req.user?.id || 'test_user';
     
     // Test saving a session
     const testSession = {
@@ -55,15 +44,16 @@ router.get('/test-session', async (req, res) => {
       }
     };
     
-    databaseService.saveLinkedInSession(testSession);
+    databaseService.saveLinkedInSession(testSession, userId);
     
     // Test retrieving the session
-    const retrievedSession = databaseService.getLinkedInSession();
-    const isValid = databaseService.isLinkedInSessionValid();
+    const retrievedSession = databaseService.getLinkedInSession(userId);
+    const isValid = databaseService.isLinkedInSessionValid(userId);
     
     res.json({
       success: true,
       data: {
+        userId: userId,
         saved: true,
         retrieved: !!retrievedSession,
         isValid: isValid,

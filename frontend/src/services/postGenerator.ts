@@ -153,12 +153,12 @@ export class PostGeneratorService {
     const { topic, selectedCategory, selectedStyle } = request;
     
     // Map frontend topics to template categories - this should take priority
-    const topicToCategory: Record<PostTopic, TemplateCategory> = {
-      'fullstack': 'frontend',
-      'dsa': 'cs-concepts',
-      'interview': 'interview-prep',
-      'placement': 'tech-career'
-    };
+      const topicToCategory: Record<PostTopic, TemplateCategory> = {
+        'fullstack': 'frontend',
+        'dsa': 'cs-concepts',
+        'interview': 'interview-prep',
+        'placement': 'tech-career'
+      };
     
     // Use topic-based mapping first, then fall back to selectedCategory if no topic mapping exists
     let category: TemplateCategory;

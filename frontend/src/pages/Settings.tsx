@@ -68,8 +68,49 @@ const Settings = () => {
   useEffect(() => {
     const linkedinParam = searchParams.get('linkedin');
     const messageParam = searchParams.get('message');
+    const codeParam = searchParams.get('code');
     
-    if (linkedinParam === 'success') {
+    if (linkedinParam === 'callback' && codeParam) {
+      // Handle LinkedIn OAuth callback
+      const completeLinkedInAuth = async () => {
+        try {
+          setIsConnecting(true);
+          setLinkedInStatus({ type: 'success', message: 'Processing LinkedIn connection...' });
+          
+          // Send the authorization code to backend to complete authentication
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/linkedin/complete-auth`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            },
+            body: JSON.stringify({ code: codeParam }),
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            setLinkedInStatus({ type: 'success', message: 'LinkedIn connected successfully!' });
+            setLinkedInConnected(true);
+            setLinkedInProfile(result.data.profile || undefined);
+          } else {
+            const error = await response.json();
+            setLinkedInStatus({ type: 'error', message: error.error || 'LinkedIn connection failed' });
+          }
+        } catch (error) {
+          console.error('LinkedIn auth completion error:', error);
+          setLinkedInStatus({ type: 'error', message: 'LinkedIn connection failed' });
+        } finally {
+          setIsConnecting(false);
+          // Clean up URL params
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('linkedin');
+          newUrl.searchParams.delete('code');
+          window.history.replaceState({}, '', newUrl.toString());
+        }
+      };
+      
+      completeLinkedInAuth();
+    } else if (linkedinParam === 'success') {
       setLinkedInStatus({ type: 'success', message: 'LinkedIn connected successfully!' });
       // Refresh LinkedIn status to show connected status
       linkedInApi.getStatus().then(status => {

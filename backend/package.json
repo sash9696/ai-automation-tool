@@ -13,12 +13,16 @@
     "enable-mock-linkedin": "node enable-mock-linkedin.js"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "better-sqlite3": "^12.2.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "helmet": "^7.1.0",
     "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
     "languagedetect": "^2.0.0",
     "morgan": "^1.10.0",
     "node-cron": "^4.2.0",
@@ -27,6 +31,8 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "dotenv-cli": "^8.0.0",
     "nodemon": "^3.0.2"
   },

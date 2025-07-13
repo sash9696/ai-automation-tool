@@ -33,6 +33,42 @@ class DatabaseService {
   }
 
   createTables() {
+    // Users table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        password_hash TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // User sessions table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+      )
+    `);
+
+    // Refresh tokens table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        expires_at TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+      )
+    `);
+
     // Scheduled jobs table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS scheduled_jobs (
@@ -42,12 +78,14 @@ class DatabaseService {
         post_data TEXT NOT NULL,
         scheduled_time TEXT NOT NULL,
         status TEXT DEFAULT 'pending',
+        user_id TEXT NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         published_at TEXT,
         linkedin_post_id TEXT,
         linkedin_post_urn TEXT,
-        error_message TEXT
+        error_message TEXT,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
       )
     `);
 
@@ -61,8 +99,10 @@ class DatabaseService {
         completed_posts INTEGER DEFAULT 0,
         failed_posts INTEGER DEFAULT 0,
         status TEXT DEFAULT 'active',
+        user_id TEXT NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
       )
     `);
 
@@ -75,20 +115,24 @@ class DatabaseService {
         successful_posts INTEGER DEFAULT 0,
         failed_posts INTEGER DEFAULT 0,
         total_engagement INTEGER DEFAULT 0,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        user_id TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
       )
     `);
 
-    // LinkedIn sessions table
+    // LinkedIn sessions table - now per user
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS linkedin_sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
         access_token TEXT NOT NULL,
         refresh_token TEXT,
         expires_at TEXT NOT NULL,
         user_profile TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
       )
     `);
 
@@ -241,18 +285,161 @@ class DatabaseService {
     };
   }
 
-  // LinkedIn session management methods
-  saveLinkedInSession(sessionData) {
-    // Clear any existing sessions first (we only support one session)
-    this.db.prepare('DELETE FROM linkedin_sessions').run();
-    
+  // User management methods
+  createUser(userData) {
     const stmt = this.db.prepare(`
-      INSERT INTO linkedin_sessions (
-        access_token, refresh_token, expires_at, user_profile
-      ) VALUES (?, ?, ?, ?)
+      INSERT INTO users (id, email, name, password_hash)
+      VALUES (?, ?, ?, ?)
     `);
 
     return stmt.run(
+      userData.id,
+      userData.email,
+      userData.name,
+      userData.password_hash || null
+    );
+  }
+
+  getUserById(userId) {
+    const stmt = this.db.prepare('SELECT * FROM users WHERE id = ?');
+    return stmt.get(userId);
+  }
+
+  getUserByEmail(email) {
+    const stmt = this.db.prepare('SELECT * FROM users WHERE email = ?');
+    return stmt.get(email);
+  }
+
+  updateUser(userId, userData) {
+    const stmt = this.db.prepare(`
+      UPDATE users 
+      SET name = ?, email = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `);
+
+    return stmt.run(userData.name, userData.email, userId);
+  }
+
+  // User session management methods
+  createUserSession(sessionData) {
+    const stmt = this.db.prepare(`
+      INSERT INTO user_sessions (id, user_id, expires_at)
+      VALUES (?, ?, ?)
+    `);
+
+    return stmt.run(
+      sessionData.id,
+      sessionData.userId,
+      sessionData.expiresAt.toISOString()
+    );
+  }
+
+  getUserSession(sessionId) {
+    const stmt = this.db.prepare(`
+      SELECT us.*, u.id as user_id, u.email, u.name 
+      FROM user_sessions us
+      JOIN users u ON us.user_id = u.id
+      WHERE us.id = ? AND datetime(us.expires_at) > datetime('now')
+    `);
+    
+    return stmt.get(sessionId);
+  }
+
+  deleteUserSession(sessionId) {
+    const stmt = this.db.prepare('DELETE FROM user_sessions WHERE id = ?');
+    return stmt.run(sessionId);
+  }
+
+  deleteExpiredSessions() {
+    const stmt = this.db.prepare(`
+      DELETE FROM user_sessions 
+      WHERE datetime(expires_at) <= datetime('now')
+    `);
+    
+    return stmt.run();
+  }
+
+  // Refresh token management methods
+  createRefreshToken(tokenData) {
+    const stmt = this.db.prepare(`
+      INSERT INTO refresh_tokens (id, user_id, token, expires_at)
+      VALUES (?, ?, ?, ?)
+    `);
+
+    return stmt.run(
+      tokenData.id,
+      tokenData.userId,
+      tokenData.token,
+      tokenData.expiresAt.toISOString()
+    );
+  }
+
+  getRefreshToken(token) {
+    const stmt = this.db.prepare(`
+      SELECT * FROM refresh_tokens 
+      WHERE token = ? AND datetime(expires_at) > datetime('now')
+    `);
+    
+    return stmt.get(token);
+  }
+
+  updateRefreshToken(tokenId, tokenData) {
+    const stmt = this.db.prepare(`
+      UPDATE refresh_tokens 
+      SET token = ?, expires_at = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `);
+
+    return stmt.run(
+      tokenData.token,
+      tokenData.expiresAt.toISOString(),
+      tokenId
+    );
+  }
+
+  deleteRefreshToken(token) {
+    const stmt = this.db.prepare('DELETE FROM refresh_tokens WHERE token = ?');
+    return stmt.run(token);
+  }
+
+  deleteAllRefreshTokens(userId) {
+    const stmt = this.db.prepare('DELETE FROM refresh_tokens WHERE user_id = ?');
+    return stmt.run(userId);
+  }
+
+  deleteExpiredRefreshTokens() {
+    const stmt = this.db.prepare(`
+      DELETE FROM refresh_tokens 
+      WHERE datetime(expires_at) <= datetime('now')
+    `);
+    
+    return stmt.run();
+  }
+
+  // Update user password
+  updateUserPassword(userId, passwordHash) {
+    const stmt = this.db.prepare(`
+      UPDATE users 
+      SET password_hash = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `);
+
+    return stmt.run(passwordHash, userId);
+  }
+
+  // LinkedIn session management methods - now per user
+  saveLinkedInSession(sessionData, userId) {
+    // Clear any existing sessions for this user first
+    this.db.prepare('DELETE FROM linkedin_sessions WHERE user_id = ?').run(userId);
+    
+    const stmt = this.db.prepare(`
+      INSERT INTO linkedin_sessions (
+        user_id, access_token, refresh_token, expires_at, user_profile
+      ) VALUES (?, ?, ?, ?, ?)
+    `);
+
+    return stmt.run(
+      userId,
       sessionData.accessToken,
       sessionData.refreshToken || null,
       sessionData.expiresAt.toISOString(),
@@ -260,9 +447,9 @@ class DatabaseService {
     );
   }
 
-  getLinkedInSession() {
-    const stmt = this.db.prepare('SELECT * FROM linkedin_sessions ORDER BY created_at DESC LIMIT 1');
-    const session = stmt.get();
+  getLinkedInSession(userId) {
+    const stmt = this.db.prepare('SELECT * FROM linkedin_sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1');
+    const session = stmt.get(userId);
     
     if (session) {
       return {
@@ -275,7 +462,7 @@ class DatabaseService {
     return null;
   }
 
-  updateLinkedInSession(sessionData) {
+  updateLinkedInSession(sessionData, userId) {
     const stmt = this.db.prepare(`
       UPDATE linkedin_sessions 
       SET access_token = ?,
@@ -283,23 +470,25 @@ class DatabaseService {
           expires_at = ?,
           user_profile = ?,
           updated_at = datetime('now')
-      WHERE id = (SELECT id FROM linkedin_sessions ORDER BY created_at DESC LIMIT 1)
+      WHERE user_id = ?
     `);
 
     return stmt.run(
       sessionData.accessToken,
       sessionData.refreshToken || null,
       sessionData.expiresAt.toISOString(),
-      sessionData.userProfile ? JSON.stringify(sessionData.userProfile) : null
+      sessionData.userProfile ? JSON.stringify(sessionData.userProfile) : null,
+      userId
     );
   }
 
-  clearLinkedInSession() {
-    return this.db.prepare('DELETE FROM linkedin_sessions').run();
+  clearLinkedInSession(userId) {
+    const stmt = this.db.prepare('DELETE FROM linkedin_sessions WHERE user_id = ?');
+    return stmt.run(userId);
   }
 
-  isLinkedInSessionValid() {
-    const session = this.getLinkedInSession();
+  isLinkedInSessionValid(userId) {
+    const session = this.getLinkedInSession(userId);
     if (!session) return false;
     
     // Check if token is expired

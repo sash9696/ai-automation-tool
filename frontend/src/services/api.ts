@@ -9,7 +9,8 @@ import type {
   ViralPost,
   ScheduledBatch,
   PremiumAnalytics,
-  ScheduledJob
+  ScheduledJob,
+  User
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
@@ -20,11 +21,12 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // Request interceptor for auth tokens
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -37,14 +39,34 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor for error handling
+// Response interceptor for error handling and token refresh
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('authToken');
-      window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // Try to refresh the token
+        const refreshResponse = await api.post('/auth/refresh');
+        const newAccessToken = refreshResponse.data.data.accessToken;
+        
+        // Store new access token
+        localStorage.setItem('accessToken', newAccessToken);
+        
+        // Retry the original request with new token
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed, clear tokens and redirect to login
+        localStorage.removeItem('accessToken');
+        window.location.href = '/';
+        return Promise.reject(refreshError);
     }
+    }
+
     return Promise.reject(error);
   }
 );
@@ -86,8 +108,8 @@ export const postsApi = {
   },
 
   // Publish post immediately
-  publish: async (id: string): Promise<Post> => {
-    const response = await api.post<ApiResponse<Post>>(`/posts/${id}/publish`);
+  publish: async (id: string, content?: string): Promise<Post> => {
+    const response = await api.post<ApiResponse<Post>>(`/posts/${id}/publish`, { content });
     return response.data.data!;
   },
 
@@ -196,6 +218,59 @@ export const settingsApi = {
   // Update settings
   update: async (settings: Partial<AppSettings>): Promise<AppSettings> => {
     const response = await api.put<ApiResponse<AppSettings>>('/settings', settings);
+    return response.data.data!;
+  },
+};
+
+export const authApi = {
+  // Register new user
+  register: async (credentials: { email: string; name: string; password: string }): Promise<{ user: User; accessToken: string }> => {
+    const response = await api.post<ApiResponse<{ user: User; accessToken: string }>>('/auth/register', credentials);
+    return response.data.data!;
+  },
+
+  // Login user
+  login: async (credentials: { email: string; password: string }): Promise<{ user: User; accessToken: string }> => {
+    const response = await api.post<ApiResponse<{ user: User; accessToken: string }>>('/auth/login', credentials);
+    return response.data.data!;
+  },
+
+  // Refresh access token
+  refresh: async (): Promise<{ user: User; accessToken: string }> => {
+    const response = await api.post<ApiResponse<{ user: User; accessToken: string }>>('/auth/refresh');
+    return response.data.data!;
+  },
+
+  // Check authentication status
+  check: async (): Promise<{ authenticated: boolean; user?: User }> => {
+    const response = await api.get<ApiResponse<{ authenticated: boolean; user?: User }>>('/auth/check');
+    return response.data.data!;
+  },
+
+  // Quick login
+  quickLogin: async (credentials: { email: string; name: string }): Promise<{ user: User; accessToken: string }> => {
+    const response = await api.post<ApiResponse<{ user: User; accessToken: string }>>('/auth/quick-login', credentials);
+    return response.data.data!;
+  },
+
+  // Logout
+  logout: async (): Promise<void> => {
+    await api.post('/auth/logout');
+  },
+
+  // Logout from all devices
+  logoutAll: async (): Promise<void> => {
+    await api.post('/auth/logout-all');
+  },
+
+  // Change password
+  changePassword: async (passwords: { currentPassword: string; newPassword: string }): Promise<void> => {
+    await api.post('/auth/change-password', passwords);
+  },
+
+  // Get current user
+  getCurrentUser: async (): Promise<{ user: User }> => {
+    const response = await api.get<ApiResponse<{ user: User }>>('/auth/user');
     return response.data.data!;
   },
 };

@@ -1,47 +1,61 @@
-// LinkedIn service with real API integration
+// LinkedIn service with real API integration - Per-user authentication
 import databaseService from './databaseService.js';
 
-let isAuthenticated = false;
-let accessToken = null;
-let refreshToken = null;
-let expiresAt = null;
+// Remove global variables - now everything is per-user
+// let isAuthenticated = false;
+// let accessToken = null;
+// let refreshToken = null;
+// let expiresAt = null;
 
-// Initialize session from database on startup
-const initSessionFromDatabase = () => {
+// Initialize session from database on startup - now per user
+const initSessionFromDatabase = (userId) => {
   try {
-    const session = databaseService.getLinkedInSession();
-    if (session && databaseService.isLinkedInSessionValid()) {
-      accessToken = session.access_token;
-      refreshToken = session.refresh_token;
-      expiresAt = new Date(session.expires_at).getTime();
-      isAuthenticated = true;
-      console.log('🔑 LinkedIn session loaded from database');
-      console.log('✅ LinkedIn auth status:', { isAuthenticated, hasToken: !!accessToken, tokenLength: accessToken?.length });
+    const session = databaseService.getLinkedInSession(userId);
+    if (session && databaseService.isLinkedInSessionValid(userId)) {
+      console.log(`🔑 LinkedIn session loaded from database for user ${userId}`);
+      return {
+        accessToken: session.access_token,
+        refreshToken: session.refresh_token,
+        expiresAt: new Date(session.expires_at).getTime(),
+        isAuthenticated: true
+      };
     } else if (session) {
-      console.log('⚠️ LinkedIn session found but expired, clearing...');
-      databaseService.clearLinkedInSession();
+      console.log(`⚠️ LinkedIn session found but expired for user ${userId}, clearing...`);
+      databaseService.clearLinkedInSession(userId);
+    }
+    return null;
+  } catch (error) {
+    console.error(`❌ Failed to load LinkedIn session from database for user ${userId}:`, error);
+    return null;
+  }
+};
+
+// Get LinkedIn session for a user
+const getUserLinkedInSession = (userId) => {
+  // Try to get from database first
+  try {
+    const dbSession = initSessionFromDatabase(userId);
+    if (dbSession) {
+      return dbSession;
     }
   } catch (error) {
-    console.error('❌ Failed to load LinkedIn session from database:', error);
+    console.error(`❌ Database error for user ${userId}:`, error);
   }
-};
 
-// Initialize token from environment variable if available (fallback)
-const initTokenFromEnv = () => {
+  // Fallback to env token if no database session (for development)
   const envToken = process.env.LINKEDIN_ACCESS_TOKEN;
-  if (envToken) {
-    accessToken = envToken;
-    isAuthenticated = true;
-    // Set expiration to 2 months from now (typical LinkedIn token lifetime)
-    expiresAt = Date.now() + (60 * 24 * 60 * 60 * 1000); // 60 days
-    console.log('🔑 LinkedIn token loaded from environment variable');
-    console.log('✅ LinkedIn auth status:', { isAuthenticated, hasToken: !!accessToken, tokenLength: accessToken?.length });
+  if (envToken && userId === 'dev_user') {
+    console.log('🔑 LinkedIn token loaded from environment variable for dev user');
+    return {
+      accessToken: envToken,
+      refreshToken: null,
+      expiresAt: Date.now() + (60 * 24 * 60 * 60 * 1000), // 60 days
+      isAuthenticated: true
+    };
   }
-};
 
-// Initialize on module load
-initSessionFromDatabase();
-initTokenFromEnv(); // Fallback to env token if no database session
+  return null;
+};
 
 export const getAuthUrl = () => {
   const clientId = process.env.LINKEDIN_CLIENT_ID;
@@ -65,7 +79,7 @@ export const getAuthUrl = () => {
   return `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${Date.now()}`;
 };
 
-export const handleCallback = async (code) => {
+export const handleCallback = async (code, userId) => {
   try {
     const clientId = process.env.LINKEDIN_CLIENT_ID;
     const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
@@ -98,36 +112,29 @@ export const handleCallback = async (code) => {
 
     const tokenData = await tokenResponse.json();
     
-    // Store tokens in memory
-    accessToken = tokenData.access_token;
-    refreshToken = tokenData.refresh_token;
-    expiresAt = Date.now() + (tokenData.expires_in * 1000);
-    isAuthenticated = true;
-    
-    // Save session to database for persistence
+    // Save session to database for this user
     try {
       databaseService.saveLinkedInSession({
         accessToken: tokenData.access_token,
         refreshToken: tokenData.refresh_token,
-        expiresAt: new Date(expiresAt),
+        expiresAt: new Date(Date.now() + (tokenData.expires_in * 1000)),
         userProfile: null // Will be fetched later
-      });
-      console.log('💾 LinkedIn session saved to database');
+      }, userId);
+      console.log(`💾 LinkedIn session saved to database for user ${userId}`);
     } catch (error) {
-      console.error('❌ Failed to save LinkedIn session to database:', error);
+      console.error(`❌ Failed to save LinkedIn session to database for user ${userId}:`, error);
     }
     
-    console.log('✅ LinkedIn tokens stored:', { 
-      hasAccessToken: !!accessToken, 
-      hasRefreshToken: !!refreshToken, 
-      expiresAt: new Date(expiresAt).toISOString(),
-      isAuthenticated
+    console.log(`✅ LinkedIn tokens stored for user ${userId}:`, { 
+      hasAccessToken: !!tokenData.access_token, 
+      hasRefreshToken: !!tokenData.refresh_token, 
+      expiresAt: new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString()
     });
     
     return {
       success: true,
       message: 'LinkedIn authentication successful',
-      accessToken,
+      accessToken: tokenData.access_token,
       profile: {
         id: 'linkedin_user',
         firstName: 'LinkedIn',
@@ -141,45 +148,59 @@ export const handleCallback = async (code) => {
   }
 };
 
-export const publishToLinkedIn = async (content) => {
-  console.log('🔍 LinkedIn auth status:', { isAuthenticated, hasToken: !!accessToken, tokenLength: accessToken?.length });
+export const publishToLinkedIn = async (content, userId) => {
+  const session = getUserLinkedInSession(userId);
   
-  if (!isAuthenticated || !accessToken) {
-    console.log('❌ LinkedIn not authenticated. Current state:', { isAuthenticated, hasToken: !!accessToken });
+  console.log(`🔍 LinkedIn auth status for user ${userId}:`, { 
+    isAuthenticated: !!session, 
+    hasToken: !!session?.accessToken, 
+    tokenLength: session?.accessToken?.length 
+  });
+  
+  if (!session || !session.accessToken) {
+    console.log(`❌ LinkedIn not authenticated for user ${userId}. Current state:`, { 
+      isAuthenticated: !!session, 
+      hasToken: !!session?.accessToken 
+    });
     throw new Error('LinkedIn not authenticated');
   }
 
   // Check if token is expired and refresh if needed
-  if (expiresAt && Date.now() > expiresAt) {
-    await refreshAccessToken();
+  if (session.expiresAt && Date.now() > session.expiresAt) {
+    await refreshAccessToken(userId);
+    // Get updated session
+    const updatedSession = getUserLinkedInSession(userId);
+    if (!updatedSession) {
+      throw new Error('Failed to refresh LinkedIn token');
+    }
   }
 
   let authorUrn = null;
 
   try {
     // Get user profile using OpenID Connect /v2/userinfo endpoint
-    console.log('📝 Fetching user profile via OpenID Connect /v2/userinfo...');
+    console.log(`📝 Fetching user profile via OpenID Connect /v2/userinfo for user ${userId}...`);
     const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Authorization': `Bearer ${session.accessToken}`,
         'Content-Type': 'application/json',
       },
     });
 
     if (profileResponse.ok) {
       const profileData = await profileResponse.json();
-      console.log('📝 OpenID Connect userinfo response:', profileData);
+      console.log(`📝 OpenID Connect userinfo response for user ${userId}:`, profileData);
       
       if (profileData.sub) {
         // The 'sub' field contains the LinkedIn member ID
         authorUrn = `urn:li:person:${profileData.sub}`;
-        console.log('📝 Got user profile URN from OpenID Connect:', authorUrn);
+        console.log(`📝 Got user profile URN from OpenID Connect for user ${userId}:`, authorUrn);
       } else {
-        console.log('📝 No sub field in userinfo response');
+        console.log(`📝 No sub field in userinfo response for user ${userId}`);
       }
     } else {
       const errorText = await profileResponse.text();
-      console.log('📝 OpenID Connect userinfo failed:', profileResponse.status, errorText);
+      console.log(`📝 OpenID Connect userinfo failed for user ${userId}:`, profileResponse.status, errorText);
     }
 
     // If we don't have an author URN, we can't post
@@ -187,7 +208,7 @@ export const publishToLinkedIn = async (content) => {
       throw new Error('Unable to get LinkedIn user profile - cannot determine author URN');
     }
 
-    // Create post using LinkedIn UGC API with the real author URN
+    // Create the post
     const postData = {
       author: authorUrn,
       lifecycleState: 'PUBLISHED',
@@ -204,104 +225,95 @@ export const publishToLinkedIn = async (content) => {
       }
     };
 
-    console.log('📝 Attempting to post to LinkedIn with data:', JSON.stringify(postData, null, 2));
+    console.log(`📝 Publishing post to LinkedIn for user ${userId}:`, JSON.stringify(postData, null, 2));
 
-    // Post to LinkedIn UGC API
-    const postResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+    const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Authorization': `Bearer ${session.accessToken}`,
         'Content-Type': 'application/json',
-        'X-Restli-Protocol-Version': '2.0.0',
-        'LinkedIn-Version': '202401',
+        'X-Restli-Protocol-Version': '2.0.0'
       },
-      body: JSON.stringify(postData),
+      body: JSON.stringify(postData)
     });
 
-    // Log the response details for debugging
-    console.log('📝 LinkedIn API Response Status:', postResponse.status);
-    console.log('📝 LinkedIn API Response Headers:', Object.fromEntries(postResponse.headers.entries()));
-
-    if (!postResponse.ok) {
-      const errorData = await postResponse.text();
-      console.error('LinkedIn posting failed:', {
-        status: postResponse.status,
-        statusText: postResponse.statusText,
-        headers: Object.fromEntries(postResponse.headers.entries()),
-        body: errorData
-      });
-      throw new Error(`Failed to publish post to LinkedIn: ${postResponse.status} ${postResponse.statusText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ LinkedIn post failed for user ${userId}:`, response.status, errorText);
+      throw new Error(`LinkedIn API error: ${response.status} - ${errorText}`);
     }
 
-    const postResult = await postResponse.json();
-    
-    console.log('📝 LinkedIn post published successfully:', postResult.id);
+    const responseData = await response.json();
+    console.log(`✅ LinkedIn post successful for user ${userId}:`, responseData);
     
     return {
       success: true,
-      message: 'Post published to LinkedIn successfully',
-      postId: postResult.id,
-      postUrn: postResult.id
+      id: responseData.id,
+      urn: responseData.id ? `urn:li:ugcPost:${responseData.id}` : null,
+      message: 'Post published successfully to LinkedIn'
     };
   } catch (error) {
-    console.error('LinkedIn posting error:', error);
-    throw new Error('Failed to publish to LinkedIn: ' + error.message);
+    console.error(`❌ LinkedIn publish error for user ${userId}:`, error);
+    throw error;
   }
 };
 
-export const getAuthStatus = () => {
+export const getAuthStatus = (userId) => {
+  const session = getUserLinkedInSession(userId);
   let profile = null;
   
   // Try to get profile from database
   try {
-    const session = databaseService.getLinkedInSession();
-    if (session && session.userProfile) {
-      profile = session.userProfile;
+    const dbSession = databaseService.getLinkedInSession(userId);
+    if (dbSession && dbSession.userProfile) {
+      profile = dbSession.userProfile;
     }
   } catch (error) {
-    console.error('❌ Failed to load user profile from database for auth status:', error);
+    console.error(`❌ Failed to load user profile from database for auth status for user ${userId}:`, error);
   }
   
   return {
-    connected: isAuthenticated && !!accessToken,
-    hasValidToken: isAuthenticated && accessToken && (!expiresAt || Date.now() < expiresAt),
+    connected: !!session && !!session.accessToken,
+    hasValidToken: !!session && !!session.accessToken && (!session.expiresAt || Date.now() < session.expiresAt),
     profile: profile
   };
 };
 
-export const getUserProfile = async () => {
-  if (!isAuthenticated || !accessToken) {
+export const getUserProfile = async (userId) => {
+  const session = getUserLinkedInSession(userId);
+  
+  if (!session || !session.accessToken) {
     throw new Error('LinkedIn not authenticated');
   }
 
   // Check if token is expired and refresh if needed
-  if (expiresAt && Date.now() > expiresAt) {
-    await refreshAccessToken();
+  if (session.expiresAt && Date.now() > session.expiresAt) {
+    await refreshAccessToken(userId);
   }
 
   // Try to get profile from database first
   try {
-    const session = databaseService.getLinkedInSession();
-    if (session && session.userProfile) {
-      console.log('📝 User profile loaded from database');
-      return session.userProfile;
+    const dbSession = databaseService.getLinkedInSession(userId);
+    if (dbSession && dbSession.userProfile) {
+      console.log(`📝 User profile loaded from database for user ${userId}`);
+      return dbSession.userProfile;
     }
   } catch (error) {
-    console.error('❌ Failed to load user profile from database:', error);
+    console.error(`❌ Failed to load user profile from database for user ${userId}:`, error);
   }
 
   try {
     // Fetch user profile using OpenID Connect /v2/userinfo endpoint
     const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Authorization': `Bearer ${session.accessToken}`,
         'Content-Type': 'application/json',
       },
     });
 
     if (profileResponse.ok) {
       const profileData = await profileResponse.json();
-      console.log('📝 User profile fetched via OpenID Connect:', profileData);
+      console.log(`📝 User profile fetched via OpenID Connect for user ${userId}:`, profileData);
       
       const profile = {
         id: profileData.sub || 'linkedin_user',
@@ -314,24 +326,24 @@ export const getUserProfile = async () => {
 
       // Update session with user profile in database
       try {
-        const session = databaseService.getLinkedInSession();
-        if (session) {
+        const dbSession = databaseService.getLinkedInSession(userId);
+        if (dbSession) {
           databaseService.updateLinkedInSession({
-            accessToken: session.access_token,
-            refreshToken: session.refresh_token,
-            expiresAt: session.expiresAt,
+            accessToken: dbSession.access_token,
+            refreshToken: dbSession.refresh_token,
+            expiresAt: dbSession.expiresAt,
             userProfile: profile
-          });
-          console.log('💾 LinkedIn user profile saved to database');
+          }, userId);
+          console.log(`💾 LinkedIn user profile saved to database for user ${userId}`);
         }
       } catch (error) {
-        console.error('❌ Failed to save LinkedIn profile to database:', error);
+        console.error(`❌ Failed to save LinkedIn profile to database for user ${userId}:`, error);
       }
       
       return profile;
     } else {
       const errorText = await profileResponse.text();
-      console.log('📝 Failed to fetch user profile:', profileResponse.status, errorText);
+      console.log(`📝 Failed to fetch user profile for user ${userId}:`, profileResponse.status, errorText);
       
       // Return fallback profile data
       return {
@@ -342,7 +354,7 @@ export const getUserProfile = async () => {
       };
     }
   } catch (error) {
-    console.log('📝 Error fetching user profile:', error.message);
+    console.log(`📝 Error fetching user profile for user ${userId}:`, error.message);
     
     // Return fallback profile data
     return {
@@ -354,8 +366,10 @@ export const getUserProfile = async () => {
   }
 };
 
-const refreshAccessToken = async () => {
-  if (!refreshToken) {
+const refreshAccessToken = async (userId) => {
+  const session = getUserLinkedInSession(userId);
+  
+  if (!session || !session.refreshToken) {
     throw new Error('No refresh token available');
   }
 
@@ -369,7 +383,7 @@ const refreshAccessToken = async () => {
     },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: refreshToken,
+      refresh_token: session.refreshToken,
       client_id: clientId,
       client_secret: clientSecret,
     }),
@@ -380,39 +394,31 @@ const refreshAccessToken = async () => {
   }
 
   const tokenData = await response.json();
-  accessToken = tokenData.access_token;
-  refreshToken = tokenData.refresh_token;
-  expiresAt = Date.now() + (tokenData.expires_in * 1000);
   
   // Update session in database with refreshed tokens
   try {
-    const session = databaseService.getLinkedInSession();
-    if (session) {
+    const dbSession = databaseService.getLinkedInSession(userId);
+    if (dbSession) {
       databaseService.updateLinkedInSession({
         accessToken: tokenData.access_token,
         refreshToken: tokenData.refresh_token,
-        expiresAt: new Date(expiresAt),
-        userProfile: session.userProfile
-      });
-      console.log('💾 LinkedIn refreshed tokens saved to database');
+        expiresAt: new Date(Date.now() + (tokenData.expires_in * 1000)),
+        userProfile: dbSession.userProfile
+      }, userId);
+      console.log(`💾 LinkedIn refreshed tokens saved to database for user ${userId}`);
     }
   } catch (error) {
-    console.error('❌ Failed to save refreshed LinkedIn tokens to database:', error);
+    console.error(`❌ Failed to save refreshed LinkedIn tokens to database for user ${userId}:`, error);
   }
 };
 
-export const disconnectLinkedIn = () => {
-  isAuthenticated = false;
-  accessToken = null;
-  refreshToken = null;
-  expiresAt = null;
-  
+export const disconnectLinkedIn = (userId) => {
   // Clear session from database
   try {
-    databaseService.clearLinkedInSession();
-    console.log('🗑️ LinkedIn session cleared from database');
+    databaseService.clearLinkedInSession(userId);
+    console.log(`🗑️ LinkedIn session cleared from database for user ${userId}`);
   } catch (error) {
-    console.error('❌ Failed to clear LinkedIn session from database:', error);
+    console.error(`❌ Failed to clear LinkedIn session from database for user ${userId}:`, error);
   }
   
   return {
@@ -421,26 +427,20 @@ export const disconnectLinkedIn = () => {
   };
 };
 
-export const setLinkedInToken = (token) => {
-  accessToken = token;
-  isAuthenticated = true;
-  // Set expiration to 2 months from now (typical LinkedIn token lifetime)
-  expiresAt = Date.now() + (60 * 24 * 60 * 60 * 1000); // 60 days
-  
+export const setLinkedInToken = (token, userId) => {
   // Save session to database
   try {
     databaseService.saveLinkedInSession({
       accessToken: token,
       refreshToken: null,
-      expiresAt: new Date(expiresAt),
+      expiresAt: new Date(Date.now() + (60 * 24 * 60 * 60 * 1000)), // 60 days
       userProfile: null
-    });
-    console.log('💾 LinkedIn manual token saved to database');
+    }, userId);
+    console.log(`💾 LinkedIn manual token saved to database for user ${userId}`);
   } catch (error) {
-    console.error('❌ Failed to save LinkedIn manual token to database:', error);
+    console.error(`❌ Failed to save LinkedIn manual token to database for user ${userId}:`, error);
   }
   
-  console.log('🔑 LinkedIn token set manually');
-  console.log('✅ LinkedIn auth status:', { isAuthenticated, hasToken: !!accessToken, tokenLength: accessToken?.length });
+  console.log(`🔑 LinkedIn token set manually for user ${userId}`);
   return { success: true, message: 'LinkedIn token set successfully' };
 }; 

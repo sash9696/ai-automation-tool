@@ -1,3 +1,5 @@
+import { requireAuth } from '../middleware/auth.js';
+
 // Helper function to get the appropriate LinkedIn service
 const getLinkedInService = async () => {
   const useMockLinkedIn = process.env.NODE_ENV === 'development' && process.env.USE_MOCK_LINKEDIN === 'true';
@@ -11,18 +13,22 @@ const getLinkedInService = async () => {
   }
 };
 
+// Apply authentication middleware to all LinkedIn routes
+export const authMiddleware = requireAuth;
+
 export const getAuthUrlController = async (req, res) => {
   try {
     const linkedInService = await getLinkedInService();
     const authUrl = linkedInService.getAuthUrl();
+    
     res.json({
       success: true,
       data: { authUrl },
-      message: 'LinkedIn auth URL generated successfully'
+      message: 'LinkedIn authorization URL generated'
     });
   } catch (error) {
-    console.error('Error generating auth URL:', error);
-    res.status(500).json({ error: 'Failed to generate auth URL' });
+    console.error('Error generating LinkedIn auth URL:', error);
+    res.status(500).json({ error: 'Failed to generate LinkedIn authorization URL' });
   }
 };
 
@@ -50,12 +56,13 @@ export const handleCallbackController = async (req, res) => {
       });
     }
 
+    // For callback from LinkedIn, we need to extract user from session
+    // This is a bit tricky since LinkedIn redirects don't include our auth
+    // For now, we'll use a temporary solution - store the code and let frontend handle it
     console.log('Processing authorization code:', code);
-    const linkedInService = await getLinkedInService();
-    const result = await linkedInService.handleCallback(code);
     
-    // Redirect to frontend with success
-    res.redirect('http://localhost:5173/settings?linkedin=success');
+    // Redirect to frontend with code so it can complete the auth with proper session
+    res.redirect(`http://localhost:5173/settings?linkedin=callback&code=${code}`);
   } catch (error) {
     console.error('LinkedIn callback error:', error);
     // Redirect to frontend with error
@@ -63,61 +70,103 @@ export const handleCallbackController = async (req, res) => {
   }
 };
 
-export const getAuthStatusController = async (req, res) => {
+export const completeAuthController = async (req, res) => {
   try {
-    const linkedInService = await getLinkedInService();
-    const status = linkedInService.getAuthStatus();
-    res.json({
-      success: true,
-      data: status,
-      message: 'Auth status retrieved successfully'
-    });
-  } catch (error) {
-    console.error('Error getting auth status:', error);
-    res.status(500).json({ error: 'Failed to get auth status' });
-  }
-};
+    const { code } = req.body;
+    const userId = req.user.id; // Get user ID from authenticated session
+    
+    if (!code) {
+      return res.status(400).json({ 
+        error: 'Authorization code is required'
+      });
+    }
 
-export const disconnectController = async (req, res) => {
-  try {
+    console.log(`Processing LinkedIn authorization for user ${userId} with code:`, code);
     const linkedInService = await getLinkedInService();
-    const result = linkedInService.disconnectLinkedIn();
+    const result = await linkedInService.handleCallback(code, userId);
+    
     res.json({
       success: true,
       data: result,
-      message: 'LinkedIn disconnected successfully'
+      message: 'LinkedIn connected successfully'
     });
   } catch (error) {
-    console.error('Error disconnecting LinkedIn:', error);
-    res.status(500).json({ error: 'Failed to disconnect LinkedIn' });
+    console.error('LinkedIn auth completion error:', error);
+    res.status(500).json({ 
+      error: 'Failed to complete LinkedIn authentication',
+      details: error.message 
+    });
   }
 };
 
-export const getProfileController = async (req, res) => {
+export const getAuthStatusController = async (req, res) => {
   try {
+    const userId = req.user.id; // Get user ID from authenticated session
     const linkedInService = await getLinkedInService();
-    const profile = await linkedInService.getUserProfile();
+    const status = linkedInService.getAuthStatus(userId);
+    
+    res.json({
+      success: true,
+      data: status,
+      message: 'LinkedIn auth status retrieved'
+    });
+  } catch (error) {
+    console.error('Error getting LinkedIn auth status:', error);
+    res.status(500).json({ error: 'Failed to get LinkedIn auth status' });
+  }
+};
+
+export const getUserProfileController = async (req, res) => {
+  try {
+    const userId = req.user.id; // Get user ID from authenticated session
+    const linkedInService = await getLinkedInService();
+    const profile = await linkedInService.getUserProfile(userId);
+    
     res.json({
       success: true,
       data: { profile },
-      message: 'Profile retrieved successfully'
+      message: 'LinkedIn user profile retrieved'
     });
   } catch (error) {
-    console.error('Error getting profile:', error);
-    res.status(500).json({ error: 'Failed to get profile' });
+    console.error('Error getting LinkedIn user profile:', error);
+    res.status(500).json({ error: 'Failed to get LinkedIn user profile' });
+  }
+};
+
+export const publishPostController = async (req, res) => {
+  try {
+    const { content } = req.body;
+    const userId = req.user.id; // Get user ID from authenticated session
+    
+    if (!content) {
+      return res.status(400).json({ error: 'Post content is required' });
+    }
+    
+    const linkedInService = await getLinkedInService();
+    const result = await linkedInService.publishToLinkedIn(content, userId);
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'Post published to LinkedIn successfully'
+    });
+  } catch (error) {
+    console.error('Error publishing to LinkedIn:', error);
+    res.status(500).json({ error: 'Failed to publish to LinkedIn' });
   }
 };
 
 export const setTokenController = async (req, res) => {
   try {
     const { token } = req.body;
+    const userId = req.user.id; // Get user ID from authenticated session
     
     if (!token) {
       return res.status(400).json({ error: 'LinkedIn access token is required' });
     }
     
     const linkedInService = await getLinkedInService();
-    const result = linkedInService.setLinkedInToken(token);
+    const result = linkedInService.setLinkedInToken(token, userId);
     
     res.json({
       success: true,
@@ -127,5 +176,22 @@ export const setTokenController = async (req, res) => {
   } catch (error) {
     console.error('Error setting LinkedIn token:', error);
     res.status(500).json({ error: 'Failed to set LinkedIn token' });
+  }
+};
+
+export const disconnectController = async (req, res) => {
+  try {
+    const userId = req.user.id; // Get user ID from authenticated session
+    const linkedInService = await getLinkedInService();
+    const result = linkedInService.disconnectLinkedIn(userId);
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'LinkedIn disconnected successfully'
+    });
+  } catch (error) {
+    console.error('Error disconnecting LinkedIn:', error);
+    res.status(500).json({ error: 'Failed to disconnect LinkedIn' });
   }
 }; 

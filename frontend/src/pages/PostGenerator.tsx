@@ -8,7 +8,10 @@ import {
   Copy,
   Check,
   Brain,
-  TrendingUp
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  X
 } from 'lucide-react';
 import { postsApi } from '../services/api';
 import { postGenerator, analyzePost } from '../services/postGenerator';
@@ -36,6 +39,13 @@ const PostGenerator = () => {
     readabilityScore: number;
     engagementPotential: number;
     suggestions: string[];
+  } | null>(null);
+  
+  // Toast notification state
+  const [toast, setToast] = useState<{
+    show: boolean;
+    type: 'success' | 'error';
+    message: string;
   } | null>(null);
 
   const topics = [
@@ -104,9 +114,10 @@ const PostGenerator = () => {
       // Analyze the generated post
       const analysis = analyzePost(post);
       setPostAnalysis(analysis);
+      showToast('success', 'Post generated successfully! ✨');
     } catch (error) {
       console.error('Failed to generate post:', error);
-      // In a real app, show a toast notification
+      showToast('error', 'Failed to generate post. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -131,8 +142,10 @@ const PostGenerator = () => {
       // Analyze the new post
       const analysis = analyzePost(post);
       setPostAnalysis(analysis);
+      showToast('success', 'Post regenerated successfully! 🔄');
     } catch (error) {
       console.error('Failed to regenerate post:', error);
+      showToast('error', 'Failed to regenerate post. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -144,8 +157,10 @@ const PostGenerator = () => {
         await navigator.clipboard.writeText(generatedPost.content);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+        showToast('success', 'Post copied to clipboard! 📋');
       } catch (error) {
         console.error('Failed to copy post:', error);
+        showToast('error', 'Failed to copy post to clipboard.');
       }
     }
   };
@@ -170,12 +185,18 @@ const PostGenerator = () => {
       setGeneratedPost(null);
       setScheduledTime('');
       setSelectedTimeSlot('09:00');
-      // In a real app, show success notification and redirect
+      showToast('success', 'Post scheduled successfully! ⏰');
     } catch (error) {
       console.error('Failed to schedule post:', error);
+      showToast('error', 'Failed to schedule post. Please try again.');
     } finally {
       setIsScheduling(false);
     }
+  };
+
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ show: true, type, message });
+    setTimeout(() => setToast(null), 5000);
   };
 
   const handlePublishNow = async () => {
@@ -183,11 +204,12 @@ const PostGenerator = () => {
     
     setIsScheduling(true);
     try {
-      await postsApi.publish(generatedPost.id);
+      await postsApi.publish(generatedPost.id, generatedPost.content);
       setGeneratedPost(null);
-      // In a real app, show success notification
+      showToast('success', 'Post published successfully to LinkedIn! 🎉');
     } catch (error) {
       console.error('Failed to publish post:', error);
+      showToast('error', 'Failed to publish post. Please try again.');
     } finally {
       setIsScheduling(false);
     }
@@ -530,6 +552,32 @@ const PostGenerator = () => {
           )}
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm w-full transition-all duration-300">
+          <div className={`${
+            toast.type === 'success' 
+              ? 'bg-green-50 border-green-200' 
+              : 'bg-red-50 border-red-200'
+          } border rounded-lg shadow-lg p-4 flex items-start space-x-3`}>
+            {toast.type === 'success' ? (
+              <CheckCircle className="w-5 h-5 text-green-500" />
+            ) : (
+              <XCircle className="w-5 h-5 text-red-500" />
+            )}
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">{toast.message}</p>
+            </div>
+            <button
+              onClick={() => setToast(null)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

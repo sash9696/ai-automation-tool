@@ -1,40 +1,43 @@
 import express from 'express';
-import { generatePostContent, getPosts, getPostById, updatePost, deletePost, schedulePost, publishPost, optimizePost, analyzePost, scheduleLinkedInPostController, getScheduledLinkedInPosts, cancelScheduledLinkedInPost, getOptimalPostingTimes } from '../controllers/postsController.js';
-import { validateGeneratePost, validateSchedulePost } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.js';
+import { 
+  generatePostController,
+  schedulePostController,
+  getScheduledPostsController,
+  deleteScheduledPostController,
+  getJobStatsController,
+  getDebugInfoController,
+  getAllJobsController,
+  processJobController,
+  publishPostController
+} from '../controllers/postsController.js';
 
 const router = express.Router();
 
-// Generate new post
-router.post('/generate', validateGeneratePost, generatePostContent);
+// All post routes require authentication
+router.use(requireAuth);
 
-// Get all posts
-router.get('/', getPosts);
+// Generate a new post
+router.post('/generate', generatePostController);
 
-// Get single post
-router.get('/:id', getPostById);
+// Publish a post to LinkedIn
+router.post('/:id/publish', publishPostController);
 
-// Update post
-router.put('/:id', updatePost);
+// Schedule a post
+router.post('/schedule', schedulePostController);
 
-// Delete post
-router.delete('/:id', deletePost);
+// Get scheduled posts
+router.get('/scheduled', getScheduledPostsController);
 
-// Schedule post
-router.post('/:id/schedule', validateSchedulePost, schedulePost);
+// Delete scheduled post
+router.delete('/scheduled/:id', deleteScheduledPostController);
 
-// Publish post immediately
-router.post('/:id/publish', publishPost);
+// Get job statistics
+router.get('/stats', getJobStatsController);
 
-// Optimize existing post
-router.post('/optimize', optimizePost);
-
-// Analyze post content
-router.post('/analyze', analyzePost);
-
-// LinkedIn Scheduling Routes
-router.post('/schedule-linkedin', scheduleLinkedInPostController);
-router.get('/scheduled-linkedin', getScheduledLinkedInPosts);
-router.delete('/scheduled-linkedin/:jobId', cancelScheduledLinkedInPost);
-router.get('/optimal-times', getOptimalPostingTimes);
+// Debug endpoints
+router.get('/debug', getDebugInfoController);
+router.get('/jobs', getAllJobsController);
+router.post('/process/:id', processJobController);
 
 export default router; 
