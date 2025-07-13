@@ -31,7 +31,6 @@
     "build:backend": "cd backend && npm run build",
     "build:ai": "cd ai-service && npm run build",
     "build:scheduler": "cd scheduler && npm run build",
-    "postinstall": "npm run install:all",
     "install:all": "cd backend && npm install && cd ../ai-service && npm install && cd ../scheduler && npm install && cd ../frontend && npm install",
     "test": "npm run test:frontend && npm run test:backend",
     "test:frontend": "cd frontend && npm test",

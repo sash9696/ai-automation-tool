@@ -2,7 +2,7 @@ services:
   - type: web
     name: ai-automation-frontend
     env: static
-    buildCommand: cd frontend && npm install && NODE_OPTIONS='--max-old-space-size=4096' npm run build:memory-optimized
+    buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_BASE_URL
