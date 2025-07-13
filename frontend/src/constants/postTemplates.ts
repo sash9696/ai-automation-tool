@@ -15,212 +15,168 @@ export interface PostTemplate {
 
 export const POST_TEMPLATES: PostTemplate[] = [
   {
-    id: "resource-curation",
-    name: "Resource Curation Masterpiece",
-    style: "curated-list",
-    category: "learning",
-    description: "Curated list of valuable resources with personal recommendations",
-    content: `I would personally recommend these YouTube channels if you want to take your JavaScript, React, and project development abilities to the next level.
+    id: "real-experience-story",
+    name: "Real Experience Story",
+    style: "personal-narrative",
+    category: "storytelling",
+    description: "Share a genuine experience with lessons learned",
+    content: `Last week, I spent 3 hours debugging what turned out to be a simple CSS issue. 
 
-These channels offer a goldmine of valuable content, ranging from in-depth tutorials to hands-on project walkthroughs. 
+I was building a responsive layout and couldn't figure out why my flexbox wasn't working as expected. After going through every possible solution I could think of, I finally discovered the problem: I had accidentally set display: none on the parent container.
 
-For Concepts and Problem Solving:
-[Specific channels with links]
+The lesson? Always check the basics first. Sometimes the most obvious things are the hardest to spot when you're deep in the weeds.
 
-For Creating Awesome Projects:
-[Specific channels with links]`,
-    hashtags: ["#javascript", "#react", "#webdevelopment", "#learning", "#resources"],
-    tone: "helpful and authoritative",
-    structure: "intro + categorization + specific recommendations + links",
-    viralElements: ["personal recommendation", "categorized content", "actionable resources", "specific links"],
-    targetAudience: "developers looking to improve skills",
-    engagementTriggers: ["resource sharing", "skill development", "community building"]
+What's the most embarrassing bug you've spent way too long debugging? 😅`,
+    hashtags: ["#webdevelopment", "#css", "#debugging", "#learning"],
+    tone: "storytelling",
+    structure: "situation + struggle + discovery + lesson + question",
+    viralElements: ["relatable struggle", "personal vulnerability", "practical lesson", "community question"],
+    targetAudience: "developers who've been there",
+    engagementTriggers: ["shared experience", "learning from mistakes", "community bonding"]
   },
   {
-    id: "interview-prep",
-    name: "Interview Preparation Goldmine",
-    style: "comprehensive-list",
-    category: "career",
-    description: "Comprehensive list of technical interview questions and challenges",
-    content: `Important Frontend Interview Questions & Problem-Solving Challenges 🚀
+    id: "mentor-advice",
+    name: "Mentor Advice",
+    style: "guidance-sharing",
+    category: "mentorship",
+    description: "Share wisdom gained from experience",
+    content: `I've been mentoring junior developers for 5 years now, and there's one piece of advice I find myself giving over and over:
 
-Core JavaScript
-[Specific questions with brief descriptions]
+Don't try to learn everything at once.
 
-Arrays
-[Specific array problems]
+I see so many new developers overwhelmed by the sheer amount of technologies out there. They want to learn React, Node.js, Python, AWS, Docker, Kubernetes - all at the same time.
 
-Strings
-[String manipulation challenges]
+Here's what I tell them: Pick one thing. Master it. Then move to the next.
 
-Objects
-[Object-oriented challenges]
+The developers I've seen succeed fastest are the ones who go deep rather than wide. They become experts in one area before branching out.
 
-Practical Applications
-[Real-world scenarios]
-
-Miscellaneous
-[Advanced topics]
-
-Bonus Tips for Interview Success:
-[Actionable advice]`,
-    hashtags: ["#FrontendDevelopment", "#JavaScript", "#CodingChallenges", "#InterviewPreparation", "#TechInterviews"],
-    tone: "educational and encouraging",
-    structure: "attention-grabbing title + categorized content + bonus tips",
-    viralElements: ["comprehensive coverage", "practical examples", "bonus tips", "emoji usage"],
-    targetAudience: "developers preparing for interviews",
-    engagementTriggers: ["career advancement", "skill validation", "community support"]
+What's the one technology you're focusing on mastering right now?`,
+    hashtags: ["#mentorship", "#careeradvice", "#learning", "#development"],
+    tone: "mentor-like",
+    structure: "experience + observation + advice + reasoning + question",
+    viralElements: ["mentorship authority", "practical advice", "contrarian thinking", "personal experience"],
+    targetAudience: "junior developers and career changers",
+    engagementTriggers: ["career guidance", "learning strategy", "mentorship"]
   },
   {
-    id: "framework-philosophy",
-    name: "Framework Philosophy Insight",
-    style: "reflective-story",
-    category: "philosophy",
-    description: "Deep reflection on framework choices and fundamentals",
-    content: `Lately, I've noticed an interesting pattern while talking to frontend developers:
+    id: "colleague-insight",
+    name: "Colleague Insight",
+    style: "peer-sharing",
+    category: "collaboration",
+    description: "Share insights from working with others",
+    content: `Had an interesting conversation with a colleague today about code reviews.
 
-[Observation about framework pressure]
+She mentioned that she always starts her reviews by looking for the positive aspects first - what the developer did well, what patterns they used effectively, what creative solutions they came up with.
 
-And honestly, I get it.
-There's always this pressure to keep up — to jump to the next tool or framework.
+Then she moves to suggestions for improvement.
 
-But what I've come to realize (and remind myself too) is this:
-It's not about the framework. It's about the fundamentals.
+I realized I've been doing the opposite - jumping straight to what could be better. Her approach is so much more constructive and encouraging.
 
-[Core insight about fundamentals]
+It's amazing how small changes in perspective can make such a big difference in team dynamics.
 
-So before jumping into the next shiny thing, it's worth asking:
-Do I really understand the basics well enough?
-
-That's what gives long-term confidence — not just chasing trends.`,
-    hashtags: ["#Frontend", "#React", "#JavaScript", "#Angular", "#Vue", "#WebDevelopment", "#CareerAdvice"],
-    tone: "reflective and philosophical",
-    structure: "observation + empathy + insight + question + conclusion",
-    viralElements: ["personal observation", "relatable struggle", "counter-intuitive insight", "thought-provoking question"],
-    targetAudience: "developers feeling framework pressure",
-    engagementTriggers: ["philosophical discussion", "career reflection", "community validation"]
-  },
-  {
-    id: "humor-remote-work",
-    name: "Remote Work Humor",
-    style: "satirical-humor",
-    category: "humor",
-    description: "Satirical take on remote work productivity",
-    content: `How to Look Busy as a Remote Developer (Even When You're Not)
-
-1. Keep typing in Slack during calls.
-Doesn't matter what you write. Even "asdf;lkj" works.
-
-2. Schedule a "deep work" block on Google Calendar.
-Then go deeply nap.
-
-[More humorous tips]
-
-Dinner never ends. Neither do you.`,
-    hashtags: ["#remotework", "#humor", "#developerlife", "#productivity"],
-    tone: "satirical and humorous",
-    structure: "clickbait title + numbered list + punchline",
-    viralElements: ["relatable humor", "industry-specific jokes", "punchline ending"],
-    targetAudience: "remote developers",
-    engagementTriggers: ["humor", "relatability", "industry culture"]
-  },
-  {
-    id: "dsa-practical",
-    name: "DSA in Real Projects",
-    style: "educational-explanation",
-    category: "technical",
-    description: "Connecting data structures to practical React development",
-    content: `Many frontend developers often wonder how Data Structures and Algorithms (DSA) relate to everyday React development. While DSA may seem abstract, they power many core features of modern applications. 
-
-Let's explore some DSA concepts you can leverage in your React app to boost efficiency and user experience:
-
-1. Arrays: Essential for State Management
-[Practical explanation]
-
-2. Objects & Hash Maps: Efficient Data Storage
-[Real-world application]
-
-[Continue with more examples]
-
-💬 How have you used Data Structures in your React projects? Share your experiences or drop your thoughts in the comments! 👇`,
-    hashtags: ["#DSA", "#React", "#JavaScript", "#WebDevelopment", "#Algorithms"],
-    tone: "educational and engaging",
-    structure: "hook + explanation + examples + call-to-action",
-    viralElements: ["practical connection", "specific examples", "engagement question", "emoji usage"],
-    targetAudience: "developers wanting to understand DSA applications",
-    engagementTriggers: ["learning", "practical application", "community discussion"]
-  },
-  {
-    id: "fundamentals-guide",
-    name: "Fundamentals Mastery Guide",
-    style: "comprehensive-guide",
-    category: "learning",
-    description: "Comprehensive guide to frontend fundamentals",
-    content: `🚀 Want to Become a TOP Front-End Developer? Start with the FUNDAMENTALS! 🔑
-
-1️⃣ Master CSS Basics:
-[Specific details]
-
-2️⃣ JavaScript Fundamentals:
-[Core concepts]
-
-[Continue with numbered list]
-
-💡 Pro Tip: Master these fundamentals, and frameworks will be tools that make your job easier. The foundation you build today will set you up for success tomorrow! 🔥`,
-    hashtags: ["#FrontEndDevelopment", "#WebDev", "#LearnToCode", "#JavaScript", "#CSS", "#WebDevelopment", "#DeveloperTips"],
-    tone: "motivational and educational",
-    structure: "attention-grabbing title + numbered list + motivational conclusion",
-    viralElements: ["numbered format", "emoji usage", "motivational language", "actionable tips"],
-    targetAudience: "aspiring frontend developers",
-    engagementTriggers: ["skill development", "motivation", "learning path"]
-  },
-  {
-    id: "fullstack-blueprint",
-    name: "Full Stack Blueprint",
-    style: "step-by-step-guide",
-    category: "architecture",
-    description: "Step-by-step guide to building full stack applications",
-    content: `How to Build a Full Stack Product from Scratch
-
-1. Start with Node.js and Express.
-Lay a solid foundation.
-
-2. Implement secure user access.
-Use JWT for authentication and authorization.
-
-[Continue with numbered steps]
-
-Adapt these steps to your project's unique needs.`,
-    hashtags: ["#FullStackDevelopment", "#NodeJS", "#React", "#WebDevelopment", "#Architecture"],
-    tone: "practical and authoritative",
-    structure: "title + numbered steps + conclusion",
-    viralElements: ["step-by-step format", "specific technologies", "practical advice"],
-    targetAudience: "full stack developers",
-    engagementTriggers: ["skill development", "project planning", "technical discussion"]
-  },
-  {
-    id: "code-quality",
-    name: "Code Quality Advocacy",
-    style: "problem-solution",
-    category: "best-practices",
-    description: "Advocating for coding standards and best practices",
-    content: `#frontend
-I've worked on codebases with over 2,000 lines of code in a single file, and it's a nightmare for new developers to navigate. It's frustrating, time-consuming, and leads to errors. 
-That's why enforcing coding standards with tools like ESLint and adopting guidelines like the Airbnb Style Guide is crucial. Here's why:
-
-[Problem statement + solution explanation]
-
-[Benefits with specific examples]
-
-[Call to action]
-
-Do you follow coding standards like Airbnb's in your projects? How has it helped your team?`,
-    hashtags: ["#frontend", "#codingstandards", "#eslint", "#airbnb", "#codequality"],
-    tone: "advocacy and problem-solving",
-    structure: "problem + solution + benefits + question",
-    viralElements: ["problem identification", "specific solutions", "community question"],
+How do you approach code reviews? Any tips for making them more collaborative?`,
+    hashtags: ["#codereviews", "#teamwork", "#collaboration", "#softskills"],
+    tone: "colleague-sharing",
+    structure: "conversation + insight + reflection + realization + question",
+    viralElements: ["peer learning", "soft skills", "team dynamics", "personal growth"],
     targetAudience: "developers working in teams",
-    engagementTriggers: ["best practices", "team collaboration", "code quality"]
+    engagementTriggers: ["team collaboration", "professional development", "soft skills"]
+  },
+  {
+    id: "thoughtful-reflection",
+    name: "Thoughtful Reflection",
+    style: "deep-thinking",
+    category: "philosophy",
+    description: "Share deep thoughts about the industry",
+    content: `Been thinking a lot about the "senior developer" title lately.
+
+What does it actually mean? Is it about years of experience? Technical skills? Leadership abilities?
+
+I've met developers with 10+ years of experience who still struggle with basic debugging, and others with 2 years who can architect entire systems.
+
+Maybe being "senior" isn't about time served, but about mindset. The ability to think beyond the immediate problem, to consider the broader impact of your decisions, to mentor others.
+
+The developers I consider truly senior are the ones who make everyone around them better.
+
+What does "senior developer" mean to you?`,
+    hashtags: ["#careerdevelopment", "#leadership", "#mentorship", "#reflection"],
+    tone: "thoughtful",
+    structure: "contemplation + questions + observations + insight + question",
+    viralElements: ["philosophical thinking", "industry reflection", "contrarian perspective", "deep questions"],
+    targetAudience: "developers thinking about career growth",
+    engagementTriggers: ["career philosophy", "industry discussion", "personal reflection"]
+  },
+  {
+    id: "enthusiastic-discovery",
+    name: "Enthusiastic Discovery",
+    style: "excited-sharing",
+    category: "learning",
+    description: "Share excitement about new discoveries",
+    content: `Just discovered something that blew my mind! 🤯
+
+I've been using JavaScript for years, but I never really understood how closures work under the hood. Today I finally dug deep into the concept and... wow.
+
+The way JavaScript creates a "backpack" of variables that persist even after the outer function finishes executing is absolutely brilliant. It's like having a little memory box that travels with your inner function.
+
+I built a simple example to test it out, and seeing it work in practice was like unlocking a superpower.
+
+Sometimes the most satisfying moments in coding are when you finally understand something that's been mysterious for years.
+
+What's a concept that finally "clicked" for you recently?`,
+    hashtags: ["#javascript", "#closures", "#learning", "#excitement"],
+    tone: "enthusiastic",
+    structure: "discovery + explanation + metaphor + experience + question",
+    viralElements: ["genuine excitement", "technical discovery", "personal breakthrough", "learning moment"],
+    targetAudience: "developers passionate about learning",
+    engagementTriggers: ["learning excitement", "technical discovery", "personal growth"]
+  },
+  {
+    id: "humble-expertise",
+    name: "Humble Expertise",
+    style: "modest-sharing",
+    category: "knowledge",
+    description: "Share knowledge without being preachy",
+    content: `I've been working with React for about 4 years now, and I'm still learning new things every day.
+
+Recently, I discovered that you can use the useCallback hook to optimize performance, but only in very specific situations. Most of the time, it's actually unnecessary and can even hurt performance.
+
+I used to add useCallback everywhere thinking it would make my app faster. Turns out, premature optimization is still a thing, even in React.
+
+The key is understanding when it actually helps - usually when you're passing callbacks to child components that are expensive to re-render.
+
+It's humbling to realize how much I still don't know, even about tools I use daily.
+
+Anyone else have similar "aha" moments with React optimization?`,
+    hashtags: ["#react", "#performance", "#optimization", "#learning"],
+    tone: "humble-expert",
+    structure: "experience + discovery + mistake + learning + humility + question",
+    viralElements: ["expertise with humility", "learning from mistakes", "practical knowledge", "vulnerability"],
+    targetAudience: "React developers",
+    engagementTriggers: ["technical learning", "performance optimization", "humble expertise"]
+  },
+  {
+    id: "community-building",
+    name: "Community Building",
+    style: "connection-focused",
+    category: "community",
+    description: "Focus on building connections and community",
+    content: `One of the best decisions I made in my career was joining a local developer meetup.
+
+At first, I was intimidated. Everyone seemed so much more experienced than me. But I quickly realized that the most senior developers were often the most welcoming and eager to help.
+
+Through that community, I've found mentors, collaborators, and friends. I've learned about job opportunities, new technologies, and different approaches to problem-solving.
+
+The tech industry can feel isolating, especially when you're working remotely or at a small company. But there are amazing communities out there waiting to welcome you.
+
+If you're feeling isolated in your tech journey, I'd encourage you to find your local developer community. You might be surprised by how welcoming they are.
+
+What communities have been most valuable in your career?`,
+    hashtags: ["#community", "#networking", "#mentorship", "#career"],
+    tone: "community-focused",
+    structure: "decision + experience + benefits + broader point + encouragement + question",
+    viralElements: ["community value", "personal growth", "encouragement", "connection"],
+    targetAudience: "developers looking for community",
+    engagementTriggers: ["community building", "networking", "career support"]
   }
 ];
 

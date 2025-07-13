@@ -1,15 +1,13 @@
 import Joi from 'joi';
 
-// Validation schemas
-const generatePostSchema = Joi.object({
-  topic: Joi.string().valid('fullstack', 'dsa', 'interview', 'placement').required(),
-  tone: Joi.string().valid('professional', 'casual', 'motivational').optional(),
+export const generatePostSchema = Joi.object({
+  topic: Joi.string().valid('fullstack', 'dsa', 'interview', 'placement').optional(),
   includeHashtags: Joi.boolean().optional(),
   includeCTA: Joi.boolean().optional(),
-  prompt: Joi.string().optional(),
+  customPrompt: Joi.string().optional(),
   useCustomPrompt: Joi.boolean().optional(),
-  selectedCategory: Joi.string().optional(),
-  selectedStyle: Joi.string().optional()
+  vibe: Joi.string().optional(),
+  postType: Joi.string().optional(),
 });
 
 const schedulePostSchema = Joi.object({

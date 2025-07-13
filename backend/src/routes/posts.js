@@ -9,13 +9,17 @@ import {
   getDebugInfoController,
   getAllJobsController,
   processJobController,
-  publishPostController
+  publishPostController,
+  getAllPostsController
 } from '../controllers/postsController.js';
 
 const router = express.Router();
 
 // All post routes require authentication
 router.use(requireAuth);
+
+// Get all posts
+router.get('/', getAllPostsController);
 
 // Generate a new post
 router.post('/generate', generatePostController);

@@ -1,10 +1,3 @@
-put these in json templates
-
-
-name
-style
-content
-
 
 template 1
 I would personally recommend these YouTube channels if you want to take your JavaScript, React, and project development abilities to the next level.

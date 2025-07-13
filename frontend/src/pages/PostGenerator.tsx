@@ -7,21 +7,23 @@ import {
   RefreshCw,
   Copy,
   Check,
-  Brain,
   TrendingUp,
   CheckCircle,
   XCircle,
-  X
+  X,
+  BookOpen,
+  Lightbulb,
+  Target,
+  GraduationCap,
+  Briefcase,
+  Heart
 } from 'lucide-react';
 import { postsApi } from '../services/api';
 import { postGenerator, analyzePost } from '../services/postGenerator';
-import { POST_TEMPLATES, getTemplateById } from '../constants/postTemplates';
-import type { Post, PostTopic, GeneratePostRequest } from '../types';
-import type { PostTemplate } from '../constants/postTemplates';
+import type { Post, GeneratePostRequest } from '../types';
 
 const PostGenerator = () => {
-  const [topic, setTopic] = useState<PostTopic>('fullstack');
-  const [tone, setTone] = useState<'professional' | 'casual' | 'motivational'>('professional');
+
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [includeCTA, setIncludeCTA] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -30,15 +32,15 @@ const PostGenerator = () => {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('09:00');
   const [isScheduling, setIsScheduling] = useState(false);
   
-  // Template system state
-  const [selectedTemplate, setSelectedTemplate] = useState<PostTemplate | null>(null);
-  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [copied, setCopied] = useState(false);
   const [postAnalysis, setPostAnalysis] = useState<{
     readabilityScore: number;
     engagementPotential: number;
     suggestions: string[];
   } | null>(null);
+  
+  // Post type selector state
+  const [selectedPostType, setSelectedPostType] = useState<string>('quick-tips');
   
   // Toast notification state
   const [toast, setToast] = useState<{
@@ -47,30 +49,67 @@ const PostGenerator = () => {
     message: string;
   } | null>(null);
 
-  const topics = [
-    { value: 'fullstack', label: 'Full Stack Development', emoji: '💻' },
-    { value: 'dsa', label: 'Data Structures & Algorithms', emoji: '🧮' },
-    { value: 'interview', label: 'Interview Preparation', emoji: '🎯' },
-    { value: 'placement', label: 'College Placements', emoji: '🎓' },
+
+
+  // Post type categories with clear descriptions
+  const postTypes = [
+    {
+      id: 'quick-tips',
+      name: 'Quick Tips & Lessons',
+      description: 'Share practical lessons and quick tips',
+      icon: Lightbulb,
+      examples: ['System design lessons', 'Coding best practices', 'Performance tips'],
+      templates: ['real-experience-story', 'humble-expertise']
+    },
+    {
+      id: 'resource-curation',
+      name: 'Resource Collections',
+      description: 'Curate and share valuable resources',
+      icon: BookOpen,
+      examples: ['GitHub repositories', 'YouTube channels', 'Learning resources'],
+      templates: ['community-building']
+    },
+    {
+      id: 'interview-prep',
+      name: 'Interview Preparation',
+      description: 'Help others prepare for technical interviews',
+      icon: Target,
+      examples: ['Interview patterns', 'Common questions', 'Preparation strategies'],
+      templates: ['mentor-advice']
+    },
+    {
+      id: 'personal-insights',
+      name: 'Personal Insights',
+      description: 'Share personal experiences and reflections',
+      icon: Heart,
+      examples: ['Career lessons', 'Learning moments', 'Industry observations'],
+      templates: ['thoughtful-reflection', 'colleague-insight']
+    },
+    {
+      id: 'educational-content',
+      name: 'Educational Content',
+      description: 'Teach concepts and explain topics',
+      icon: GraduationCap,
+      examples: ['DSA explanations', 'Framework guides', 'Technical concepts'],
+      templates: ['enthusiastic-discovery']
+    },
+    {
+      id: 'career-advice',
+      name: 'Career Advice',
+      description: 'Share career guidance and mentorship',
+      icon: Briefcase,
+      examples: ['Career paths', 'Skill development', 'Professional growth'],
+      templates: ['mentor-advice', 'community-building']
+    }
   ];
 
-  // Topic to template mapping
-  const topicToTemplate: Record<PostTopic, string> = {
-    'fullstack': 'fundamentals-guide',
-    'dsa': 'dsa-practical',
-    'interview': 'interview-prep',
-    'placement': 'resource-curation'
-  };
 
-  // Handler for topic selection that updates template automatically
-  const handleTopicChange = (newTopic: PostTopic) => {
-    setTopic(newTopic);
-    // Automatically update template based on topic
-    const templateId = topicToTemplate[newTopic];
-    if (templateId) {
-      const template = getTemplateById(templateId);
-      setSelectedTemplate(template || null);
-    }
+
+
+
+  // Handler for post type selection
+  const handlePostTypeChange = (postTypeId: string) => {
+    setSelectedPostType(postTypeId);
   };
 
   const timeSlots = [
@@ -89,21 +128,15 @@ const PostGenerator = () => {
     { value: '18:00', label: '6:00 PM', description: 'Evening time' }
   ];
 
-  const tones = [
-    { value: 'professional', label: 'Professional' },
-    { value: 'casual', label: 'Casual' },
-    { value: 'motivational', label: 'Motivational' },
-  ];
+
 
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
       const request: GeneratePostRequest = {
-        topic,
-        tone,
         includeHashtags,
         includeCTA,
-        selectedTemplate: selectedTemplate?.id || null,
+        postType: selectedPostType,
       };
       
       // Use the template-based post generator
@@ -126,11 +159,9 @@ const PostGenerator = () => {
     setIsGenerating(true);
     try {
       const request: GeneratePostRequest = {
-        topic,
-        tone,
         includeHashtags,
         includeCTA,
-        selectedTemplate: selectedTemplate?.id || null,
+        postType: selectedPostType,
       };
       
       // Regenerate with different template
@@ -226,50 +257,40 @@ const PostGenerator = () => {
         <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Post Configuration</h2>
           
-          {/* Topic Selection */}
+          {/* Post Type Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Topic Category
+              Post Type
             </label>
             <div className="grid grid-cols-2 gap-3">
-              {topics.map((t) => (
+              {postTypes.map((type) => (
                 <button
-                  key={t.value}
-                  onClick={() => handleTopicChange(t.value as PostTopic)}
+                  key={type.id}
+                  onClick={() => handlePostTypeChange(type.id)}
                   className={`p-3 rounded-lg border-2 text-left transition-colors ${
-                    topic === t.value
+                    selectedPostType === type.id
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="text-2xl mb-1">{t.emoji}</div>
-                  <div className="text-sm font-medium">{t.label}</div>
+                                     <div className="text-2xl mb-1">{<type.icon className="w-6 h-6" />}</div>
+                  <div className="text-sm font-medium">{type.name}</div>
+                  <div className="text-xs text-gray-600 mt-1">{type.description}</div>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {type.examples.slice(0, 3).map((example, index) => (
+                      <span key={index} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                        {example}
+                      </span>
+                    ))}
+                  </div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Tone Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Tone
-            </label>
-            <div className="space-y-2">
-              {tones.map((t) => (
-                <label key={t.value} className="flex items-center">
-                  <input
-                    type="radio"
-                    name="tone"
-                    value={t.value}
-                    checked={tone === t.value}
-                    onChange={(e) => setTone(e.target.value as typeof tone)}
-                    className="mr-3"
-                  />
-                  <span className="text-sm">{t.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+
+
+
 
           {/* Options */}
           <div className="space-y-4">
@@ -294,67 +315,18 @@ const PostGenerator = () => {
             </label>
           </div>
 
-          {/* Template Selector Toggle */}
-          <div className="mt-6">
-            <button
-              onClick={() => setShowTemplateSelector(!showTemplateSelector)}
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-2"
-            >
-              <Brain className="w-4 h-4" />
-              <span>{showTemplateSelector ? 'Hide' : 'Show'} Template Options</span>
-            </button>
-          </div>
 
-          {/* Template Selector */}
-          {showTemplateSelector && (
-            <div className="mt-4 space-y-4 p-4 bg-gray-50 rounded-lg">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Viral Template Selection
-                </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {POST_TEMPLATES.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => setSelectedTemplate(template)}
-                      className={`w-full p-3 rounded-lg text-left transition-colors border ${
-                        selectedTemplate?.id === template.id
-                          ? 'bg-blue-100 text-blue-700 border-blue-300'
-                          : 'bg-white border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{template.name}</div>
-                          <div className="text-xs text-gray-600 mt-1">{template.description}</div>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {template.hashtags.slice(0, 3).map((tag, index) => (
-                              <span key={index} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-500 ml-2">
-                          {template.style}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                {selectedTemplate && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="text-sm font-medium text-blue-900 mb-2">Selected Template: {selectedTemplate.name}</div>
-                    <div className="text-xs text-blue-700">
-                      <div><strong>Style:</strong> {selectedTemplate.style}</div>
-                      <div><strong>Target:</strong> {selectedTemplate.targetAudience}</div>
-                      <div><strong>Viral Elements:</strong> {selectedTemplate.viralElements.slice(0, 3).join(', ')}</div>
-                    </div>
-                  </div>
-                )}
+
+          {/* Post Preview Summary */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Post Summary</h3>
+            <div className="text-xs text-gray-600 space-y-1">
+              <div><strong>Type:</strong> {postTypes.find(pt => pt.id === selectedPostType)?.name}</div>
+              <div className="mt-2 text-gray-500">
+                This will generate a {postTypes.find(pt => pt.id === selectedPostType)?.description.toLowerCase()}.
               </div>
             </div>
-          )}
+          </div>
 
           {/* Generate Button */}
           <button
@@ -457,10 +429,7 @@ const PostGenerator = () => {
 
               {/* Post Details */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Topic:</span>
-                  <span className="font-medium">{topics.find(t => t.value === generatedPost.topic)?.label}</span>
-                </div>
+                
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Status:</span>
                   <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
