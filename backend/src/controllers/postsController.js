@@ -1,4 +1,4 @@
-import { generateAIPost, optimizeLinkedInPost } from '../services/aiService.js';
+import { generateAIPost } from '../services/aiService.js';
 import { scheduleLinkedInPost, getScheduledLinkedInJobs, cancelScheduledLinkedInJob, getOptimalLinkedInPostingTimes, scheduleForOptimalTime } from '../services/linkedInSchedulerService.js';
 import { rankLinkedInPost } from '../services/linkedInAlgorithm.js';
 import databaseService from '../services/databaseService.js';
@@ -6,42 +6,33 @@ import databaseService from '../services/databaseService.js';
 // Generate a new post
 export const generatePostController = async (req, res) => {
   try {
-    const { topic, tone, vibe = 'Story', prompt, useCustomPrompt, includeHashtags, includeCTA, selectedTemplate } = req.body;
+    const { vibe = 'Story', prompt, useCustomPrompt, includeHashtags, includeCTA, postType } = req.body;
     const userId = req.user.id;
 
     console.log('🔍 [POST CONFIG DEBUG] Raw request body:', req.body);
 
-    if (!topic) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Topic is required' 
-      });
-    }
+
 
     // Extract parameters for AI service
     const extractedParams = {
-      topic,
-      tone,
       vibe,
       prompt,
       useCustomPrompt,
       includeHashtags,
       includeCTA,
-      selectedTemplate
+      postType
     };
 
     console.log('🔍 [POST CONFIG DEBUG] Extracted parameters:', extractedParams);
 
     // Prepare payload for AI service
     const aiServicePayload = { 
-      topic, 
-      tone, 
       vibe, 
       prompt, 
       useCustomPrompt, 
       includeHashtags, 
       includeCTA,
-      selectedTemplate
+      postType
     };
 
     console.log('🔍 [POST CONFIG DEBUG] Payload sent to AI service:', aiServicePayload);
@@ -57,7 +48,7 @@ export const generatePostController = async (req, res) => {
     const newPost = {
       id: Date.now().toString(),
       content: generatedContent,
-      topic,
+      topic: postType || 'general',
       contentLength: generatedContent.length,
       status: 'draft',
       hasRanking: !!ranking,
@@ -324,6 +315,30 @@ export const publishPostController = async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to publish post',
+      details: error.message 
+    });
+  }
+}; 
+
+// Get all posts for the authenticated user
+export const getAllPostsController = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // For now, return empty array since we don't have a posts table yet
+    // In the future, this would query the database for all posts belonging to the user
+    const posts = [];
+    
+    res.json({
+      success: true,
+      data: posts,
+      message: 'All posts retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error getting all posts:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get posts',
       details: error.message 
     });
   }

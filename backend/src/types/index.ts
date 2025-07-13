@@ -12,6 +12,16 @@ export interface Post {
 
 export type PostTopic = 'fullstack' | 'dsa' | 'interview' | 'placement';
 
+export type PostTone = 
+  | 'conversational' 
+  | 'storytelling' 
+  | 'mentor-like' 
+  | 'colleague-sharing' 
+  | 'thoughtful' 
+  | 'enthusiastic' 
+  | 'humble-expert' 
+  | 'community-focused';
+
 export type PostStatus = 'draft' | 'scheduled' | 'published' | 'failed';
 
 export interface PostAnalytics {
@@ -23,12 +33,13 @@ export interface PostAnalytics {
 }
 
 export interface GeneratePostRequest {
-  topic: PostTopic;
-  tone?: 'professional' | 'casual' | 'motivational';
+  topic?: PostTopic;
   includeHashtags?: boolean;
   includeCTA?: boolean;
-  prompt?: string; // Custom prompt from frontend template system
-  useCustomPrompt?: boolean; // Flag to indicate custom prompt usage
+  customPrompt?: string;
+  useCustomPrompt?: boolean;
+  vibe?: string;
+  postType?: string;
 }
 
 export interface SchedulePostRequest {
