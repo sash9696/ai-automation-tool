@@ -15,9 +15,9 @@ import {
 } from 'lucide-react';
 import { postsApi } from '../services/api';
 import { postGenerator, analyzePost } from '../services/postGenerator';
-import { TEMPLATE_CATEGORIES, TEMPLATE_STYLES } from '../constants/postTemplates';
+import { POST_TEMPLATES, getTemplateById } from '../constants/postTemplates';
 import type { Post, PostTopic, GeneratePostRequest } from '../types';
-import type { TemplateCategory, TemplateStyle } from '../constants/postTemplates';
+import type { PostTemplate } from '../constants/postTemplates';
 
 const PostGenerator = () => {
   const [topic, setTopic] = useState<PostTopic>('fullstack');
@@ -31,8 +31,7 @@ const PostGenerator = () => {
   const [isScheduling, setIsScheduling] = useState(false);
   
   // Template system state
-  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory>('frontend');
-  const [selectedStyle, setSelectedStyle] = useState<TemplateStyle>('story');
+  const [selectedTemplate, setSelectedTemplate] = useState<PostTemplate | null>(null);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [copied, setCopied] = useState(false);
   const [postAnalysis, setPostAnalysis] = useState<{
@@ -55,21 +54,22 @@ const PostGenerator = () => {
     { value: 'placement', label: 'College Placements', emoji: '🎓' },
   ];
 
-  // Topic to category mapping (same as in postGenerator service)
-  const topicToCategory: Record<PostTopic, TemplateCategory> = {
-    'fullstack': 'frontend',
-    'dsa': 'cs-concepts',
+  // Topic to template mapping
+  const topicToTemplate: Record<PostTopic, string> = {
+    'fullstack': 'fundamentals-guide',
+    'dsa': 'dsa-practical',
     'interview': 'interview-prep',
-    'placement': 'tech-career'
+    'placement': 'resource-curation'
   };
 
-  // Handler for topic selection that updates category automatically
+  // Handler for topic selection that updates template automatically
   const handleTopicChange = (newTopic: PostTopic) => {
     setTopic(newTopic);
-    // Automatically update category based on topic
-    const mappedCategory = topicToCategory[newTopic];
-    if (mappedCategory) {
-      setSelectedCategory(mappedCategory);
+    // Automatically update template based on topic
+    const templateId = topicToTemplate[newTopic];
+    if (templateId) {
+      const template = getTemplateById(templateId);
+      setSelectedTemplate(template || null);
     }
   };
 
@@ -103,11 +103,10 @@ const PostGenerator = () => {
         tone,
         includeHashtags,
         includeCTA,
-        selectedCategory,
-        selectedStyle,
+        selectedTemplate: selectedTemplate?.id || null,
       };
       
-      // Use the new template-based post generator
+      // Use the template-based post generator
       const post = await postGenerator.generatePost(request);
       setGeneratedPost(post);
       
@@ -131,8 +130,7 @@ const PostGenerator = () => {
         tone,
         includeHashtags,
         includeCTA,
-        selectedCategory,
-        selectedStyle,
+        selectedTemplate: selectedTemplate?.id || null,
       };
       
       // Regenerate with different template
@@ -312,46 +310,48 @@ const PostGenerator = () => {
             <div className="mt-4 space-y-4 p-4 bg-gray-50 rounded-lg">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Template Category
+                  Viral Template Selection
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {TEMPLATE_CATEGORIES.map((cat) => (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {POST_TEMPLATES.map((template) => (
                     <button
-                      key={cat.value}
-                      onClick={() => setSelectedCategory(cat.value as TemplateCategory)}
-                      className={`p-2 rounded text-sm text-left transition-colors ${
-                        selectedCategory === cat.value
-                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                          : 'bg-white border border-gray-200 hover:border-gray-300'
+                      key={template.id}
+                      onClick={() => setSelectedTemplate(template)}
+                      className={`w-full p-3 rounded-lg text-left transition-colors border ${
+                        selectedTemplate?.id === template.id
+                          ? 'bg-blue-100 text-blue-700 border-blue-300'
+                          : 'bg-white border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <div className="text-lg mb-1">{cat.emoji}</div>
-                      <div className="font-medium">{cat.label}</div>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{template.name}</div>
+                          <div className="text-xs text-gray-600 mt-1">{template.description}</div>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {template.hashtags.slice(0, 3).map((tag, index) => (
+                              <span key={index} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 ml-2">
+                          {template.style}
+                        </div>
+                      </div>
                     </button>
                   ))}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Template Style
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {TEMPLATE_STYLES.map((style) => (
-                    <button
-                      key={style.value}
-                      onClick={() => setSelectedStyle(style.value as TemplateStyle)}
-                      className={`p-2 rounded text-sm text-left transition-colors ${
-                        selectedStyle === style.value
-                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                          : 'bg-white border border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="text-lg mb-1">{style.emoji}</div>
-                      <div className="font-medium">{style.label}</div>
-                    </button>
-                  ))}
-                </div>
+                {selectedTemplate && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                    <div className="text-sm font-medium text-blue-900 mb-2">Selected Template: {selectedTemplate.name}</div>
+                    <div className="text-xs text-blue-700">
+                      <div><strong>Style:</strong> {selectedTemplate.style}</div>
+                      <div><strong>Target:</strong> {selectedTemplate.targetAudience}</div>
+                      <div><strong>Viral Elements:</strong> {selectedTemplate.viralElements.slice(0, 3).join(', ')}</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

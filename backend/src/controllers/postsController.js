@@ -6,7 +6,7 @@ import databaseService from '../services/databaseService.js';
 // Generate a new post
 export const generatePostController = async (req, res) => {
   try {
-    const { topic, tone, vibe = 'Story', prompt, useCustomPrompt, includeHashtags, includeCTA, selectedCategory, selectedStyle } = req.body;
+    const { topic, tone, vibe = 'Story', prompt, useCustomPrompt, includeHashtags, includeCTA, selectedTemplate } = req.body;
     const userId = req.user.id;
 
     console.log('🔍 [POST CONFIG DEBUG] Raw request body:', req.body);
@@ -27,8 +27,7 @@ export const generatePostController = async (req, res) => {
       useCustomPrompt,
       includeHashtags,
       includeCTA,
-      selectedCategory,
-      selectedStyle
+      selectedTemplate
     };
 
     console.log('🔍 [POST CONFIG DEBUG] Extracted parameters:', extractedParams);
@@ -42,8 +41,7 @@ export const generatePostController = async (req, res) => {
       useCustomPrompt, 
       includeHashtags, 
       includeCTA,
-      selectedCategory,
-      selectedStyle
+      selectedTemplate
     };
 
     console.log('🔍 [POST CONFIG DEBUG] Payload sent to AI service:', aiServicePayload);
