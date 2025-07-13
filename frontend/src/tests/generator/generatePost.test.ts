@@ -301,9 +301,11 @@ describe('PostGeneratorService', () => {
       expect(topTemplates.length).toBeLessThanOrEqual(3);
       expect(topTemplates.length).toBeGreaterThan(0);
       
-      // Should be sorted by viral score (descending)
+      // Should be sorted by viral elements and engagement triggers (descending)
       for (let i = 1; i < topTemplates.length; i++) {
-        expect(topTemplates[i-1].viralScore).toBeGreaterThanOrEqual(topTemplates[i].viralScore);
+        const prevScore = topTemplates[i-1].viralElements.length + topTemplates[i-1].engagementTriggers.length;
+        const currentScore = topTemplates[i].viralElements.length + topTemplates[i].engagementTriggers.length;
+        expect(prevScore).toBeGreaterThanOrEqual(currentScore);
       }
     });
 
@@ -437,11 +439,11 @@ describe('PostGeneratorService', () => {
       const content2 = 'This is a test post about React development.';
       
       // Add first content
-      const isNew1 = (postGenerator as any).contentSet.add(content1);
+      const isNew1 = (postGenerator as unknown as { contentSet: { add: (content: string) => boolean } }).contentSet.add(content1);
       expect(isNew1).toBe(true);
       
       // Add duplicate content
-      const isNew2 = (postGenerator as any).contentSet.add(content2);
+      const isNew2 = (postGenerator as unknown as { contentSet: { add: (content: string) => boolean } }).contentSet.add(content2);
       expect(isNew2).toBe(false);
     });
 
@@ -450,11 +452,11 @@ describe('PostGeneratorService', () => {
       const content2 = 'This is a different post about React development.';
       
       // Add first content
-      const isNew1 = (postGenerator as any).contentSet.add(content1);
+      const isNew1 = (postGenerator as unknown as { contentSet: { add: (content: string) => boolean } }).contentSet.add(content1);
       expect(isNew1).toBe(true);
       
       // Add similar content
-      const isNew2 = (postGenerator as any).contentSet.add(content2);
+      const isNew2 = (postGenerator as unknown as { contentSet: { add: (content: string) => boolean } }).contentSet.add(content2);
       expect(isNew2).toBe(true);
     });
   });

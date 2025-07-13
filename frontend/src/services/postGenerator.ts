@@ -4,8 +4,12 @@ import {
   getTemplatesByCategory, 
   getTopTemplates as getTopTemplatesFromConstants
 } from '../constants/postTemplates';
-import type { PostTemplate, TemplateCategory, TemplateStyle } from '../constants/postTemplates';
+import type { PostTemplate } from '../constants/postTemplates';
 import type { Post, PostTopic, GeneratePostRequest } from '../types';
+
+// Define missing types
+type TemplateCategory = string;
+type TemplateStyle = string;
 
 // Queue for tracking and rotating templates to avoid repeat generation
 class TemplateQueue {
@@ -150,46 +154,38 @@ export class PostGeneratorService {
    * Select the optimal template based on user preferences and usage history
    */
   private selectOptimalTemplate(request: GeneratePostRequest): PostTemplate {
-    const { topic, selectedCategory, selectedStyle } = request;
+    const { topic, selectedTemplate } = request;
     
     // Map frontend topics to template categories - this should take priority
-      const topicToCategory: Record<PostTopic, TemplateCategory> = {
-        'fullstack': 'frontend',
-        'dsa': 'cs-concepts',
-        'interview': 'interview-prep',
-        'placement': 'tech-career'
-      };
+    const topicToCategory: Record<PostTopic, TemplateCategory> = {
+      'fullstack': 'frontend',
+      'dsa': 'cs-concepts',
+      'interview': 'interview-prep',
+      'placement': 'tech-career'
+    };
     
-    // Use topic-based mapping first, then fall back to selectedCategory if no topic mapping exists
+    // Use topic-based mapping first, then fall back to selectedTemplate if no topic mapping exists
     let category: TemplateCategory;
     if (topicToCategory[topic]) {
       category = topicToCategory[topic];
-    } else if (selectedCategory) {
-      category = selectedCategory as TemplateCategory;
     } else {
       category = 'frontend'; // Default fallback
     }
 
-    let availableTemplates = getTemplatesByCategory(category);
-
-    // Filter by selected style if provided
-    if (selectedStyle) {
-      availableTemplates = availableTemplates.filter(
-        template => template.style === selectedStyle
-      );
+    // If a specific template is selected, use it directly
+    if (selectedTemplate) {
+      const template = this.getTemplateById(selectedTemplate);
+      if (template) {
+        return template;
+      }
     }
+
+    let availableTemplates = getTemplatesByCategory(category);
 
     // Filter out recently used templates
     availableTemplates = availableTemplates.filter(
       template => !this.templateQueue.hasBeenUsedRecently(template.id)
     );
-
-    // If no templates available with selected style, try other styles in the same category
-    if (availableTemplates.length === 0 && selectedStyle) {
-      availableTemplates = getTemplatesByCategory(category).filter(
-        template => !this.templateQueue.hasBeenUsedRecently(template.id)
-      );
-    }
 
     // If all templates in category have been used recently, expand search
     if (availableTemplates.length === 0) {
@@ -204,10 +200,12 @@ export class PostGeneratorService {
       availableTemplates = getTemplatesByCategory(category);
     }
 
-    // Select template with highest viral score
-    const bestTemplate = availableTemplates.reduce((best, current) => 
-      current.viralScore > best.viralScore ? current : best
-    );
+    // Select template with most viral elements
+    const bestTemplate = availableTemplates.reduce((best, current) => {
+      const bestScore = best.viralElements.length + best.engagementTriggers.length;
+      const currentScore = current.viralElements.length + current.engagementTriggers.length;
+      return currentScore > bestScore ? current : best;
+    });
 
     return bestTemplate;
   }
@@ -218,12 +216,21 @@ export class PostGeneratorService {
   private createOpenAIPrompt(template: PostTemplate, request: GeneratePostRequest): string {
     const { topic, tone, includeHashtags, includeCTA } = request;
     
-    // Base prompt from template
-    let prompt = template.prompt;
-    
-    // Replace placeholders
-    prompt = prompt.replace('{topic}', this.getTopicDisplayName(topic));
-    prompt = prompt.replace('{tone}', tone || 'professional');
+    // Create base prompt from template content and structure
+    let prompt = `You are a senior software engineer creating viral LinkedIn content. Write a post based on this template:
+
+Template: ${template.name}
+Style: ${template.style}
+Category: ${template.category}
+Structure: ${template.structure}
+Viral Elements: ${template.viralElements.join(', ')}
+Target Audience: ${template.targetAudience}
+
+Content Example:
+${template.content}
+
+Topic: ${this.getTopicDisplayName(topic)}
+Tone: ${tone || 'professional'}`;
     
     // Add additional instructions based on user preferences
     const additionalInstructions: string[] = [];
@@ -316,7 +323,7 @@ Remember: This should read like a post from someone who has actually lived these
    * Get available templates for UI
    */
   getAvailableTemplates(category?: TemplateCategory, style?: TemplateStyle): PostTemplate[] {
-    let templates = Array.from(POST_TEMPLATES.values());
+    let templates = POST_TEMPLATES;
     
     if (category) {
       templates = templates.filter(t => t.category === category);
@@ -340,7 +347,7 @@ Remember: This should read like a post from someone who has actually lived these
    * Get template by ID
    */
   getTemplateById(id: string): PostTemplate | undefined {
-    return POST_TEMPLATES.get(id);
+    return POST_TEMPLATES.find(template => template.id === id);
   }
 
   /**

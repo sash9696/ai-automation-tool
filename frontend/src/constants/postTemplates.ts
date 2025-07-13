@@ -234,4 +234,18 @@ export const getTemplatesByCategory = (category: string): PostTemplate[] => {
 
 export const getTemplateCategories = (): string[] => {
   return [...new Set(POST_TEMPLATES.map(template => template.category))];
+};
+
+export const getTopTemplates = (limit: number = 5): PostTemplate[] => {
+  // Return the most viral templates based on engagement triggers and viral elements
+  const topTemplates = POST_TEMPLATES
+    .sort((a, b) => {
+      // Sort by number of viral elements and engagement triggers
+      const aScore = a.viralElements.length + a.engagementTriggers.length;
+      const bScore = b.viralElements.length + b.engagementTriggers.length;
+      return bScore - aScore; // Descending order
+    })
+    .slice(0, limit);
+  
+  return topTemplates;
 }; 
