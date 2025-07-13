@@ -19,7 +19,7 @@
     "kill": "npm run kill:ports && npm run kill:processes",
     "kill:ports": "lsof -ti:3001,3002,5173,5174,5175,5176,5177 | xargs kill -9 2>/dev/null || true",
     "kill:processes": "pkill -f \"node.*3001\" || true && pkill -f \"node.*3002\" || true && pkill -f \"vite\" || true && pkill -f \"nodemon\" || true",
-    "start": "node start-production.js",
+    "start": "echo 'This is a monorepo with separate services. Use individual service start commands: npm run start:backend, npm run start:ai, etc.'",
     "start:backend": "cd backend && npm start",
     "start:ai": "cd ai-service && npm run build && npm start",
     "start:frontend": "cd frontend && npm run preview",
