@@ -45,7 +45,7 @@ services:
   - type: web
     name: ai-automation-ai-service
     env: node
-    buildCommand: cd ai-service && npm install
+    buildCommand: cd ai-service && npm install && npm run build
     startCommand: cd ai-service && npm start
     envVars:
       - key: NODE_ENV
@@ -60,7 +60,7 @@ services:
   - type: worker
     name: ai-automation-scheduler
     env: node
-    buildCommand: cd scheduler && npm install
+    buildCommand: cd scheduler && npm install && npm run build
     startCommand: cd scheduler && npm start
     envVars:
       - key: NODE_ENV

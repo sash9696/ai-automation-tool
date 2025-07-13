@@ -17,7 +17,7 @@ const PORT = process.env['PORT'] || 3002;
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
     origin: process.env['NODE_ENV'] === 'production'
-        ? ['https://yourdomain.com']
+        ? ['https://ai-automation-frontend.onrender.com']
         : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
 }));
@@ -30,6 +30,7 @@ app.get('/health', (_req, res) => {
         timestamp: new Date().toISOString(),
         environment: process.env['NODE_ENV'] || 'development',
     });
+    return;
 });
 app.post('/api/generate-post', async (req, res) => {
     try {
@@ -145,7 +146,7 @@ app.use((error, _req, res, _next) => {
     res.status(500).json({
         success: false,
         error: 'Internal Server Error',
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
     });
 });
 app.listen(PORT, () => {
